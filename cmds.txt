@@ -1,0 +1,24 @@
+npm install --save-dev hardhat
+
+npx hardhat
+
+npm install @openzeppelin/contracts
+
+// compilar única vez
+
+// para correr en nodo local 
+npx hardhat node
+
+npx hardhat run --network localhost scripts/deploy.ts
+
+// para correr en otra red
+npx hardhat run --network goerli scripts/deploy.ts
+
+// verificar (address del contrato y parametros iniciales - en wei )
+npx hardhat verify --network goerli 0x747BDe2008be9388ecE5A1853B354D969B752E2D
+
+// test
+npx hardhat test
+
+// upgrades
+npm install @openzeppelin/hardhat-upgrades

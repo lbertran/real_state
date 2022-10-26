@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 
 
 contract Tokenization is
-    Initializable, 
+    Initializable,  
     PausableUpgradeable,
     ReentrancyGuardUpgradeable
 {

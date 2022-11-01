@@ -21,7 +21,7 @@ contract AssetFactory {
 
     function allAssets(uint256 limit, uint256 offset)
         public
-        view
+        pure
         returns (Asset[] memory coll)
     {
         return coll;

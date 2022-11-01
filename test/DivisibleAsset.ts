@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { mine } from "@nomicfoundation/hardhat-network-helpers";
 
-describe("TokenERC20ken", function () {
+describe("DivisibleAsset", function () {
     const ERC20_INITIALSUPLY = 100e10;
     const LPTOKEN_OTHERACCOUNT = 50e10;
     const STAKING_OTHERACCOUNT = 30e10;
@@ -11,8 +11,8 @@ describe("TokenERC20ken", function () {
     
 
     async function deployContract() {
-        const TokenERC20ken = await ethers.getContractFactory("TokenERC20ken");
-        const tokenERC20ken = await TokenERC20ken.deploy(ERC20_INITIALSUPLY, 'TokenRS', 'TRS');
+        const DivisibleAsset = await ethers.getContractFactory("DivisibleAsset");
+        const divisibleAsset = await DivisibleAsset.deploy(ERC20_INITIALSUPLY, 'Asset1', 'A1');
         
         /* const LPToken = await ethers.getContractFactory("LPToken");
         const lPToken = await LPToken.deploy(ERC20_INITIALSUPLY);
@@ -22,16 +22,16 @@ describe("TokenERC20ken", function () {
         
         const [owner, otherAccount, secondAccount] = await ethers.getSigners();
         
-        return { tokenERC20ken, owner, otherAccount, secondAccount };
+        return { divisibleAsset, owner, otherAccount, secondAccount };
     }
 
     describe("Deployment", function () {
       it("Should deploy the contract", async function () {
-          const {tokenERC20ken} = await loadFixture(deployContract);
+          const {divisibleAsset} = await loadFixture(deployContract);
 
-          expect(await tokenERC20ken.name()).to.equal('TokenRS');
-          expect(await tokenERC20ken.symbol()).to.equal('TRS');
-          expect(tokenERC20ken).to.not.empty;
+          expect(await divisibleAsset.name()).to.equal('Asset1');
+          expect(await divisibleAsset.symbol()).to.equal('A1');
+          expect(divisibleAsset).to.not.empty;
           
       });
   });

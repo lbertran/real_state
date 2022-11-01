@@ -1,29 +1,29 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "./Asset.sol";
+import "./DivisibleAsset.sol";
 
 contract AssetFactory {
-    Asset[] private _assets;
+    DivisibleAsset[] public _divisibleAssetAssets;
 
-    function createAsset(
+    function createDivisibleAsset(
         uint256 _initialSupply,
         string memory name_,
         string memory symbol_
     ) public {
-        Asset asset = new Asset(
+        DivisibleAsset divisibleAsset = new DivisibleAsset(
             _initialSupply,
             name_,
             symbol_
         );
-        _assets.push(asset);
+        _divisibleAssetAssets.push(divisibleAsset);
     }
 
-    function allAssets(uint256 limit, uint256 offset)
+    function allAssets()
         public
-        pure
-        returns (Asset[] memory coll)
+        view
+        returns (DivisibleAsset[] memory coll)
     {
-        return coll;
+        return _divisibleAssetAssets;
     }
 }

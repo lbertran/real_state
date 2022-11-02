@@ -73,5 +73,4 @@ describe("AssetFactory", function () {
             console.log(await assetFactory.allAssets());
         });
       });
-
 });

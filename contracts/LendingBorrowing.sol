@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./utils/ABDKMath64x64.sol";
 import "./interfaces/IUniswapV2Router02.sol";
-import "./interfaces/IUSDZ.sol";
 
 import "hardhat/console.sol";
 
@@ -110,7 +109,7 @@ contract LendingBorrowing is Ownable {
         emit Deposit(msg.sender, _amount);
     }
 
-    // User withdraws xSUSHI collateral if safety ratio stays > 200%
+    // User withdraws collateral if safety ratio stays > 200%
     function withdraw(uint256 _amount) public {
         Position storage pos = positions[msg.sender];
         require(pos.collateral >= _amount, "Not enough collateral token in account");
@@ -121,9 +120,9 @@ contract LendingBorrowing is Ownable {
 
         uint256 withdrawable_;
 
-        // TO-DO colRatio debe clacularse a partir del precio de ethereum vs del token colateral
-        // por ahora lo dejamos en 1
-        uint256 colRatio = 1;
+        
+        uint256 colRatio = getCurrentCollateralRatio(msg.sender);
+
         if (pos.debt == 0) {
             withdrawable_ = pos.collateral;
         } else {
@@ -144,23 +143,75 @@ contract LendingBorrowing is Ownable {
         emit Withdraw(msg.sender, _amount);
     }
 
-    // User mints and borrows USDZ against collateral
+    // User mints and borrows against collateral
     function borrow(uint256 _amount) public {
-        require(_amount > 0, "can't borrow 0");
+        require(_amount > 0, "Aomunt must be > 0");
         Position storage pos = positions[msg.sender];
 
-        
+        uint256 interest_ = calcInterest(msg.sender);
 
+        // Check forward col. ratio >= safe col. ratio limit
+        require(
+            getForwardCollateralRatio(
+                msg.sender,
+                pos.debt + interest_ + _amount
+            ) >= borrowThreshold,
+            "not enough collateral to borrow that much"
+        );
+
+        // add interest and new debt to position
+        pos.debt += (_amount + interest_);
+        pos.lastInterest = block.timestamp;
+
+        // TO-DO enviar ETH al msg.sender
         emit Borrow(msg.sender, _amount, pos.debt, pos.collateral);
     }
 
-    // User repays any interest, then debt in USDZ
-    // Interest revenue is acounted for in protocolIntRev
+    // User repays any interest
     function repay(uint256 _amount) public {
         require(_amount > 0, "can't repay 0");
 
         Position storage pos = positions[msg.sender];
-        
+        uint256 interestDue = calcInterest(msg.sender);
+
+        // account for protocol interest revenue
+        if (_amount >= interestDue + pos.debt) {
+            // repays all interest and debt
+            require(
+                IERC20(token).transferFrom(
+                    msg.sender,
+                    address(this),
+                    pos.debt + interestDue
+                ),
+                "repay transfer failed"
+            );
+            pos.debt = 0;
+        } else if (_amount >= interestDue) {
+            // repays all interest, starts repaying debt
+            require(
+                IERC20(token).transferFrom(
+                    msg.sender,
+                    address(this),
+                    _amount
+                ),
+                "repay transfer failed"
+            );
+            pos.debt -= (_amount - interestDue);
+        } else {
+            // repay partial interest, no debt repayment
+            require(
+                IERC20(token).transferFrom(
+                    msg.sender,
+                    address(this),
+                    _amount
+                ),
+                "repay transfer failed"
+            );
+            pos.debt += (interestDue - _amount);
+        }
+
+        // restart interest compounding from here
+        pos.lastInterest = block.timestamp;
 
         emit Repay(msg.sender, _amount, pos.debt, pos.collateral);
     }
@@ -221,5 +272,46 @@ contract LendingBorrowing is Ownable {
         return uint256(interest_) - positions[_account].debt;
     }
 
+    // Calculates forward collateral ratio of an account, using custom debt amount
+    function getForwardCollateralRatio(address _account, uint256 _totalDebt)
+        public
+        view
+        returns (uint256)
+    {
+        return _getCollateralRatio(_account, _totalDebt);
+    }
 
+    // Calculates current collateral ratio of an account.
+    // NOTE: EXCLUDES INTEREST
+    function getCurrentCollateralRatio(address _account)
+        public
+        view
+        returns (uint256)
+    {
+        return _getCollateralRatio(_account, positions[_account].debt);
+    }
+
+    // Internal getColRatio logic
+    function _getCollateralRatio(address _account, uint256 _totalDebt)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 collateral_ = positions[_account].collateral;
+
+        if (collateral_ == 0) {
+            // if collateral is 0, col ratio is 0 and no borrowing possible
+            return 0;
+        } else if (_totalDebt == 0) {
+            // if debt is 0, col ratio is infinite
+            return type(uint256).max;
+        }
+
+        // TO-DO colRatio debe clacularse a partir del precio de ethereum vs del token colateral
+        // por ahora lo dejamos en 1
+        uint256 collateralValue_ = 1;
+
+        // E.g. 2:1 will return 20 000 (20 000/10 000=2) for 200%
+        return (collateralValue_ * SCALING_FACTOR) / (_totalDebt);
+    }
 }

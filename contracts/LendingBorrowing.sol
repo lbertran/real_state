@@ -11,22 +11,15 @@ import "./interfaces/IUSDZ.sol";
 
 import "hardhat/console.sol";
 
-// TODO features
-// - Admin functions for withdrawing protocol USDZ/xSUSHI
-
-// TODO fixes
-// - add nonReentrant
-// - remove fees/rates in contructor - setter only for safety
-// - check best practices for ABDKMath64x64
-// - standardize revert msgs
-// - use smaller uints for fees and rates
+// habrá un contrato de lending por cada token
 // - natspec comments for functions
 
-contract Controller is Ownable {
+contract LendingBorrowing is Ownable {
     
     // ---------------------------------------------------------------------
     // VARIABLES
     // ---------------------------------------------------------------------
+    address public token;
 
     struct Position {
         uint256 collateral;
@@ -36,14 +29,12 @@ contract Controller is Ownable {
 
     mapping(address => Position) private positions;
     
-    uint256 public liqFeeProtocol;
-    uint256 public liqFeeSender;
-
-    uint256 public interestRate;
-
-    uint256 public borrowThreshold;
+    uint256 public totalCollateral;
+    uint256 public totalBorrowed; 
+    uint256 public maxLTV; 
     uint256 public liqThreshold;
-
+    uint256 public borrowThreshold;
+    uint256 public interestRate;
     uint256 public constant SCALING_FACTOR = 10000;
     int128 public SECONDS_IN_YEAR; // int128 for compound interest math
 
@@ -52,19 +43,23 @@ contract Controller is Ownable {
     // ---------------------------------------------------------------------
 
     event Deposit(address indexed account, uint256 amount);
+
     event Withdraw(address indexed account, uint256 amount);
+    
     event Borrow(
         address indexed account,
         uint256 amountBorrowed,
         uint256 totalDebt,
         uint256 collateralAmount
     );
+
     event Repay(
         address indexed account,
         uint256 debtRepaid,
         uint256 debtRemaining,
         uint256 collateralAmount
     );
+
     event Liquidation(
         address indexed account,
         address indexed liquidator,
@@ -78,20 +73,18 @@ contract Controller is Ownable {
     // CONSTRUCTOR
     // ---------------------------------------------------------------------
     constructor(
-        uint256 _liqFeeProtocol,
-        uint256 _liqFeeSender,
-        uint256 _interestRate,
+        address _token,
+        uint256 _maxLTV,
+        uint256 _liqThreshold,
         uint256 _borrowThreshold,
-        uint256 _liqThreshold
+        uint256 _interestRate
     ) {
-
+        token = _token;
         // fees and rates use SCALING_FACTOR 
-        liqFeeProtocol = _liqFeeProtocol;
-        liqFeeSender = _liqFeeSender;
-        interestRate = _interestRate;
-        borrowThreshold = _borrowThreshold;
+        maxLTV = _maxLTV;
         liqThreshold = _liqThreshold;
-
+        borrowThreshold = _borrowThreshold;
+        interestRate = _interestRate;
         // set SECONDS_IN_YEAR for interest calculations
         SECONDS_IN_YEAR = ABDKMath64x64.fromUInt(31556952);
 
@@ -102,16 +95,51 @@ contract Controller is Ownable {
     // PUBLIC STATE-MODIFYING FUNCTIONS
     // ---------------------------------------------------------------------
 
-    // User deposits xSUSHI as collateral
+    // User deposits token as collateral
     function deposit(uint256 _amount) public {
-        
-
+        require(_amount > 0, "Amount must be > 0");
+        require(
+            IERC20(token).transferFrom(
+                msg.sender,
+                address(this),
+                _amount
+            ),
+            "Token transfer failed"
+        );
+        positions[msg.sender].collateral += _amount;
         emit Deposit(msg.sender, _amount);
     }
 
     // User withdraws xSUSHI collateral if safety ratio stays > 200%
     function withdraw(uint256 _amount) public {
-        
+        Position storage pos = positions[msg.sender];
+        require(pos.collateral >= _amount, "Not enough collateral token in account");
+
+        uint256 interest_ = calcInterest(msg.sender);
+        pos.debt += interest_;
+        pos.lastInterest = block.timestamp;
+
+        uint256 withdrawable_;
+
+        // TO-DO colRatio debe clacularse a partir del precio de ethereum vs del token colateral
+        // por ahora lo dejamos en 1
+        uint256 colRatio = 1;
+        if (pos.debt == 0) {
+            withdrawable_ = pos.collateral;
+        } else {
+            withdrawable_ =
+                (pos.collateral / colRatio) *
+                (colRatio - borrowThreshold);
+        }
+
+        require(withdrawable_ >= _amount, "Not enough withdrawable amount in account");
+
+        pos.collateral -= _amount;
+
+        require(
+            IERC20(token).transfer(msg.sender, _amount),
+            "Withdraw transfer failed"
+        );
 
         emit Withdraw(msg.sender, _amount);
     }
@@ -150,6 +178,48 @@ contract Controller is Ownable {
         pos.debt = 0;
     }
 
+    // Calculates interest on position of given address
+    // WARNING: contains fancy math
+    function calcInterest(address _account)
+        public
+        view
+        returns (uint256 interest)
+    {
+        if (
+            positions[_account].debt == 0 ||
+            positions[_account].lastInterest == 0 ||
+            interestRate == 0 ||
+            block.timestamp == positions[_account].lastInterest
+        ) {
+            return 0;
+        }
+
+        uint256 secondsSinceLastInterest_ = block.timestamp -
+            positions[_account].lastInterest;
+        int128 yearsBorrowed_ = ABDKMath64x64.div(
+            ABDKMath64x64.fromUInt(secondsSinceLastInterest_),
+            SECONDS_IN_YEAR
+        );
+        int128 interestRate_ = ABDKMath64x64.div(
+            ABDKMath64x64.fromUInt(interestRate),
+            ABDKMath64x64.fromUInt(SCALING_FACTOR)
+        );
+        int128 debt_ = ABDKMath64x64.fromUInt(positions[_account].debt);
+
+        // continous compound interest = P*e^(i*t)
+        // this figure includes principal + interest
+        uint64 interest_ = ABDKMath64x64.toUInt(
+            ABDKMath64x64.mul(
+                debt_,
+                ABDKMath64x64.exp(
+                    ABDKMath64x64.mul(interestRate_, yearsBorrowed_)
+                )
+            )
+        );
+
+        // returns only the interest, not the principal
+        return uint256(interest_) - positions[_account].debt;
+    }
 
 
 }

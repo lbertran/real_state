@@ -29,13 +29,13 @@ contract Controller is Ownable {
         uint256 lastInterest;
     }
 
-    mapping(address => Position) private positions;
-    // to store protocol and user liquidation fees (in xSUSHI)
-    mapping(address => uint256) private liquidationFees;
+        mapping(address => Position) private positions;
+        // to store protocol and user liquidation fees (in xSUSHI)
+        mapping(address => uint256) private liquidationFees;
 
-    // protocol debt and interest revenue
-    uint256 public protocolDebt; // in xSUSHI
-    uint256 public protocolIntRev; // in USDZ
+        // protocol debt and interest revenue
+        uint256 public protocolDebt; // in xSUSHI
+        uint256 public protocolIntRev; // in USDZ
 
     address public usdcAddress;
     address public usdzAddress;

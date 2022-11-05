@@ -28,10 +28,16 @@ contract LendingBorrowing is Ownable {
 
     mapping(address => Position) private positions;
     
-    uint256 public totalCollateral;
-    uint256 public totalBorrowed; 
+    uint256 public procotolTotalCollateral;
+    uint256 public procotolTotalBorrowed; 
     uint256 public maxLTV; 
+    
+    // umbral de liquidación, y fee para el protocolo y para el liquidador
     uint256 public liqThreshold;
+    uint256 public liqFeeProtocol;
+    uint256 public liqFeeSender;
+    uint256 public protocolDebt;
+
     uint256 public borrowThreshold;
     uint256 public interestRate;
     uint256 public constant SCALING_FACTOR = 10000;
@@ -75,6 +81,8 @@ contract LendingBorrowing is Ownable {
         address _token,
         uint256 _maxLTV,
         uint256 _liqThreshold,
+        uint256 _liqFeeProtocol,
+        uint256 _liqFeeSender,
         uint256 _borrowThreshold,
         uint256 _interestRate
     ) {
@@ -82,6 +90,8 @@ contract LendingBorrowing is Ownable {
         // fees and rates use SCALING_FACTOR 
         maxLTV = _maxLTV;
         liqThreshold = _liqThreshold;
+        liqFeeProtocol = _liqFeeProtocol;
+        liqFeeSender = _liqFeeSender;
         borrowThreshold = _borrowThreshold;
         interestRate = _interestRate;
         // set SECONDS_IN_YEAR for interest calculations
@@ -223,7 +233,68 @@ contract LendingBorrowing is Ownable {
     function liquidate(address _account) public {
         Position storage pos = positions[_account];
 
+        require(pos.collateral > 0, "Account has no collateral");
         
+        uint256 interest_ = calcInterest(_account);
+        uint256 totalCollateral = pos.collateral; //needed for reporting in event
+        uint256 collateralRatio = getForwardCollateralRatio(
+            _account,
+            pos.debt + interest_
+        );
+
+        // Check debt + interest puts account below liquidation col ratio
+        // acá chequea si la pocisión es liquidable
+        require(
+            collateralRatio < liqThreshold,
+            "Account not below liquidation threshold"
+        );
+
+        // calc fees to protocol and liquidator
+        uint256 protocolShare = ((pos.collateral * liqFeeProtocol) /
+            SCALING_FACTOR);
+        uint256 liquidatorShare = ((pos.collateral * liqFeeSender) /
+            SCALING_FACTOR);
+
+        require(
+            protocolShare + liquidatorShare <= pos.collateral,
+            "Liquidation fees incorrectly set"
+        );
+
+        // taking protocol fees in token
+        // el protocolo queda con sus tokens ya depositados. Solo se transfieren token al liquidador
+        require(
+            IERC20(token).transferFrom(
+                address(this),
+                msg.sender,
+                liquidatorShare
+            ),
+            "Token transfer to liquidator failed"
+        );
+
+        // Accounting for protocol shortfall by taking on debt
+        pos.collateral = totalCollateral - (protocolShare + liquidatorShare);
+        uint256 colRatioAfterFees = getForwardCollateralRatio(
+            _account,
+            pos.debt + interest_
+        );
+        uint256 protocolDebtCreated;
+        if (colRatioAfterFees < SCALING_FACTOR) {
+            // if liquidating at col ratio < 100% + fees
+            protocolDebtCreated =
+                (SCALING_FACTOR - colRatioAfterFees) *
+                pos.collateral;
+        }
+
+        protocolDebt += protocolDebtCreated;
+
+        emit Liquidation(
+            _account,
+            msg.sender,
+            totalCollateral,
+            collateralRatio,
+            pos.debt,
+            protocolDebtCreated
+        );
 
         pos.collateral = 0;
         pos.debt = 0;

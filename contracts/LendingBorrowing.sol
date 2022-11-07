@@ -85,7 +85,7 @@ contract LendingBorrowing is Ownable {
         uint256 _liqFeeSender,
         uint256 _borrowThreshold,
         uint256 _interestRate
-    ) {
+    ) payable {
         token = _token;
         // fees and rates use SCALING_FACTOR 
         maxLTV = _maxLTV;
@@ -99,6 +99,7 @@ contract LendingBorrowing is Ownable {
 
         
     }
+    
 
     // ---------------------------------------------------------------------
     // PUBLIC STATE-MODIFYING FUNCTIONS
@@ -430,5 +431,22 @@ contract LendingBorrowing is Ownable {
     function setTokenAddress(address _token) external onlyOwner {
         require(_token != address(0), "Zero address not allowed");
         token = _token;
+    }
+
+    // ---------------------------------------------------------------------
+    // ETHER FUNCTIONS
+    // ---------------------------------------------------------------------
+     // Función para recibir Ether. msg.data debe estar vacío
+    receive() external payable {}
+
+    // se llama a la función Fallback cuando msg.data no está vacío
+    fallback() external payable {}
+
+    // Función para transferir Ether desde el saldo del contrato 
+    // a la dirección pasada por parámetro
+    function transfer(address payable _to, uint _amount) external onlyOwner {
+        // Note que "_to" es declarada como payable
+        (bool success, ) = _to.call{value: _amount}("");
+        require(success, "Failed to send Ether");
     }
 }

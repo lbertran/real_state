@@ -31,4 +31,6 @@ VARIABLES
 
 - protocolDebt: bad debt. when an account is not liquidated on time, the liquidated collateral might not be enough to cover the position’s debt, and it adds to the amount of bad debt within the protocol — which can pose a risk to users.
 
+- borrowThreshold: is the total amount that individuals can borrow
 
+- interestRate: tasa de interés.

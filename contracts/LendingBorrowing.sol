@@ -385,4 +385,49 @@ contract LendingBorrowing is Ownable {
         // E.g. 2:1 will return 20 000 (20 000/10 000=2) for 200%
         return (collateralValue_ * SCALING_FACTOR) / (_totalDebt);
     }
+
+    // ---------------------------------------------------------------------
+    // ONLY OWNER FUNCTIONS
+    // ---------------------------------------------------------------------
+
+    function setFeesAndRates(
+        uint256 _liqFeeProtocol,
+        uint256 _liqFeeSender,
+        uint256 _interestRate
+    ) external onlyOwner {
+        // Liquidation fees
+        require(
+            _liqFeeProtocol + _liqFeeSender <= SCALING_FACTOR,
+            "Liquidation fees out of range"
+        );
+        liqFeeProtocol = _liqFeeProtocol;
+        liqFeeSender = _liqFeeSender;
+
+        // Interest rates - capped at 100% APR
+        require(_interestRate <= SCALING_FACTOR, "InterestRate out of range");
+        interestRate = _interestRate;
+    }
+
+    function setThresholds(uint256 _borrowThreshold, uint256 _liqThreshold)
+        external
+        onlyOwner
+    {
+        // both thresholds should be > scaling factor
+        // e.g. 20 000 / 10 000 = 200%
+        require(
+            _borrowThreshold >= SCALING_FACTOR,
+            "borrow threshold must be > scaling factor"
+        );
+        require(
+            _liqThreshold >= SCALING_FACTOR,
+            "liq threshold must be > scaling factor"
+        );
+        borrowThreshold = _borrowThreshold;
+        liqThreshold = _liqThreshold;
+    }
+
+    function setTokenAddress(address _token) external onlyOwner {
+        require(_token != address(0), "Zero address not allowed");
+        token = _token;
+    }
 }

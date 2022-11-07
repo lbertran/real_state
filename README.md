@@ -1,16 +1,16 @@
 # SMART CONTRACTS
 
-# DivisibleAsset
+## DivisibleAsset
 
 Es un contrato ERC20 que se utilizará en el caso en que un activo sea sometido a una tokenización fraccional.
 Cada inmueble tokenizado por esta vía tendrá su propio contrato ERC20.
 
-# AssetFactory
+## AssetFactory
 
 Es el contrato que genera un contrato ERC20 (DivisibleAsset) o ERC1155 por cada inmueble tokenizado.
 Utiliza el Factory Pattern
 
-# LendingBorrowing
+## LendingBorrowing
 Es un contrato que gestiona lending & borrowings de cada token ERC20 generado. Cada inmueble tokenizado con ERC20 tendrá su propio contrato LendingBorrowing.
 
 VARIABLES

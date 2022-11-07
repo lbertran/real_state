@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 import "./DivisibleAsset.sol";
 
 contract AssetFactory {
-    DivisibleAsset[] public _divisibleAsset;
+    DivisibleAsset[] public _divisibleAssets;
 
     function createDivisibleAsset(
         uint256 _initialSupply,
@@ -16,7 +16,7 @@ contract AssetFactory {
             name_,
             symbol_
         );
-        _divisibleAsset.push(divisibleAsset);
+        _divisibleAssets.push(divisibleAsset);
     }
 
     function allAssets()
@@ -24,6 +24,6 @@ contract AssetFactory {
         view
         returns (DivisibleAsset[] memory coll)
     {
-        return _divisibleAsset;
+        return _divisibleAssets;
     }
 }

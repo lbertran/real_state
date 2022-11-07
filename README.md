@@ -1,4 +1,4 @@
-# SMART CONTRACTS
+## SMART CONTRACTS
 
 ## DivisibleAsset
 
@@ -34,3 +34,5 @@ VARIABLES
 - borrowThreshold: is the total amount that individuals can borrow
 
 - interestRate: tasa de interés.
+
+- scaling factor: El factor de escala es un multiplicador que afecta la tasa de interés de los préstamos

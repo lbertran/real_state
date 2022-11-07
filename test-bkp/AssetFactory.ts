@@ -41,9 +41,9 @@ describe("AssetFactory", function () {
             expect(tx_asset2).to.not.empty;
             expect(tx_asset3).to.not.empty;
 
-            const asset1_address = await assetFactory._divisibleAssetAssets(0);
-            const asset2_address = await assetFactory._divisibleAssetAssets(1);
-            const asset3_address = await assetFactory._divisibleAssetAssets(2);
+            const asset1_address = await assetFactory._divisibleAssets(0);
+            const asset2_address = await assetFactory._divisibleAssets(1);
+            const asset3_address = await assetFactory._divisibleAssets(2);
 
             console.log("A1 address at: ", asset1_address);
             console.log("A2 address at: ", asset2_address);

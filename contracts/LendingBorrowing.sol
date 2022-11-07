@@ -26,7 +26,7 @@ contract LendingBorrowing is Ownable {
         uint256 lastInterest;
     }
 
-    mapping(address => Position) private positions;
+    mapping(address => Position) public positions;
     
     uint256 public procotolTotalCollateral;
     uint256 public procotolTotalBorrowed; 

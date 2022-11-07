@@ -140,7 +140,7 @@ contract LendingBorrowing is Ownable {
                 (pos.collateral / colRatio) *
                 (colRatio - borrowThreshold);
         }
-
+        
         require(withdrawable_ >= _amount, "Not enough withdrawable amount in account");
 
         pos.collateral -= _amount;
@@ -155,7 +155,7 @@ contract LendingBorrowing is Ownable {
 
     // User mints and borrows against collateral
     function borrow(uint256 _amount) public {
-        require(_amount > 0, "Aomunt must be > 0");
+        require(_amount > 0, "Amount must be > 0");
         Position storage pos = positions[msg.sender];
 
         uint256 interest_ = calcInterest(msg.sender);
@@ -166,7 +166,7 @@ contract LendingBorrowing is Ownable {
                 msg.sender,
                 pos.debt + interest_ + _amount
             ) >= borrowThreshold,
-            "not enough collateral to borrow that much"
+            "Not enough collateral to borrow that much"
         );
 
         // add interest and new debt to position
@@ -179,7 +179,7 @@ contract LendingBorrowing is Ownable {
 
     // User repays any interest
     function repay(uint256 _amount) public {
-        require(_amount > 0, "can't repay 0");
+        require(_amount > 0, "Can't repay 0");
 
         Position storage pos = positions[msg.sender];
         uint256 interestDue = calcInterest(msg.sender);
@@ -187,13 +187,14 @@ contract LendingBorrowing is Ownable {
         // account for protocol interest revenue
         if (_amount >= interestDue + pos.debt) {
             // repays all interest and debt
+            // ver como pagar con ETH
             require(
                 IERC20(token).transferFrom(
                     msg.sender,
                     address(this),
                     pos.debt + interestDue
                 ),
-                "repay transfer failed"
+                "Repay transfer failed"
             );
             pos.debt = 0;
         } else if (_amount >= interestDue) {
@@ -204,7 +205,7 @@ contract LendingBorrowing is Ownable {
                     address(this),
                     _amount
                 ),
-                "repay transfer failed"
+                "Repay transfer failed"
             );
             pos.debt -= (_amount - interestDue);
         } else {
@@ -215,7 +216,7 @@ contract LendingBorrowing is Ownable {
                     address(this),
                     _amount
                 ),
-                "repay transfer failed"
+                "Repay transfer failed"
             );
             pos.debt += (interestDue - _amount);
         }

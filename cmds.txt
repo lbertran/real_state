@@ -43,3 +43,8 @@ clones
 -------
 https://blog.openzeppelin.com/workshop-recap-cheap-contract-deployment-through-clones/
 
+Vs code plugins:
+- solidity juan blanco
+- hardhat
+- solidity visual developer - consensy
+- ETHover

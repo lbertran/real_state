@@ -157,6 +157,7 @@ contract LendingBorrowing is Ownable {
     // User mints and borrows against collateral
     function borrow(uint256 _amount) public {
         require(_amount > 0, "Amount must be > 0");
+
         Position storage pos = positions[msg.sender];
 
         uint256 interest_ = calcInterest(msg.sender);
@@ -309,6 +310,8 @@ contract LendingBorrowing is Ownable {
         view
         returns (uint256 interest)
     {
+        // si la pocision esta en 0 y el ultimo interesa calculado es del bloque actual
+        // retorna CERO
         if (
             positions[_account].debt == 0 ||
             positions[_account].lastInterest == 0 ||
@@ -317,7 +320,7 @@ contract LendingBorrowing is Ownable {
         ) {
             return 0;
         }
-
+        // si el ultimo interesa calculado no es del bloque actual
         uint256 secondsSinceLastInterest_ = block.timestamp -
             positions[_account].lastInterest;
         int128 yearsBorrowed_ = ABDKMath64x64.div(

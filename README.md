@@ -36,3 +36,14 @@ VARIABLES
 - interestRate: tasa de interés.
 
 - scaling factor: El factor de escala es un multiplicador que afecta la tasa de interés de los préstamos
+
+INTERÉS
+Se utiliza interés compuesto continuo.
+
+Formula: P*e^(i*t)
+
+donde:
+- P: deuda
+- i: tasa de interes sobre el scalling factor
+- t: tiempo en años
+

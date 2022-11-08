@@ -33,18 +33,18 @@ describe("AssetFactory", function () {
         it("Should create multiple DivisibleAsset and call its functions", async function () {
             const {assetFactory, DivisibleAsset} = await loadFixture(deployContract);
 
-            const tx_asset1 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset1', 'A1');
-            const tx_asset2 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset2', 'A2');
-            const tx_asset3 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset3', 'A3');
+            const tx_asset1 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset1', 'A1', 1000);
+            const tx_asset2 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset2', 'A2', 2000);
+            const tx_asset3 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset3', 'A3', 3000);
 
             expect(tx_asset1).to.not.empty;
             expect(tx_asset2).to.not.empty;
             expect(tx_asset3).to.not.empty;
 
-            const asset1_address = await assetFactory._divisibleAssets(0);
-            const asset2_address = await assetFactory._divisibleAssets(1);
-            const asset3_address = await assetFactory._divisibleAssets(2);
-
+            const asset1_address = (await assetFactory._divisibleAssets(0)).token;
+            const asset2_address = (await assetFactory._divisibleAssets(1)).token;
+            const asset3_address = (await assetFactory._divisibleAssets(2)).token;
+            
             console.log("A1 address at: ", asset1_address);
             console.log("A2 address at: ", asset2_address);
             console.log("A3 address at: ", asset3_address);
@@ -52,6 +52,7 @@ describe("AssetFactory", function () {
             const asset1 = DivisibleAsset.attach(asset1_address);
             const asset2 = DivisibleAsset.attach(asset2_address);
             const asset3 = DivisibleAsset.attach(asset3_address);
+
 
             expect(await asset1.name()).to.equal('Asset1');
             expect(await asset1.symbol()).to.equal('A1');
@@ -66,9 +67,9 @@ describe("AssetFactory", function () {
         it("Should create multiple DivisibleAsset and return collection", async function () {
             const {assetFactory, DivisibleAsset} = await loadFixture(deployContract);
 
-            const tx_asset1 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset1', 'A1');
-            const tx_asset2 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset2', 'A2');
-            const tx_asset3 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset3', 'A3');
+            const tx_asset1 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset1', 'A1',1000);
+            const tx_asset2 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset2', 'A2',2000);
+            const tx_asset3 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset3', 'A3',3000);
 
             console.log(await assetFactory.allAssets());
         });

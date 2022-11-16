@@ -11,6 +11,7 @@ import "./interfaces/IUniswapV2Router02.sol";
 import "hardhat/console.sol";
 
 import "./AssetFactory.sol";
+import "./PriceConsumer.sol";
 
 // habrá un contrato de lending por cada token
 // - natspec comments for functions
@@ -22,6 +23,7 @@ contract LendingBorrowing is Ownable {
     // ---------------------------------------------------------------------
     address public token;
     AssetFactory public assetFactory;
+    PriceConsumer public priceConsumer;
 
     struct Position {
         uint256 collateral;
@@ -83,6 +85,7 @@ contract LendingBorrowing is Ownable {
     constructor(
         address _token,
         address _assetFactory,
+        address _priceConsumer,
         uint256 _maxLTV,
         uint256 _liqThreshold,
         uint256 _liqFeeProtocol,
@@ -92,6 +95,7 @@ contract LendingBorrowing is Ownable {
     ) payable {
         token = _token;
         assetFactory = AssetFactory(_assetFactory);
+        priceConsumer = PriceConsumer(_priceConsumer);
         // fees and rates use SCALING_FACTOR 
         maxLTV = _maxLTV;
         liqThreshold = _liqThreshold;
@@ -389,11 +393,16 @@ contract LendingBorrowing is Ownable {
         }
 
         // TO-DO colRatio debe clacularse a partir del precio de ethereum vs del token colateral
-        // primero el valor del colateral en USD
+        
+        // valor del colateral en USD
 
         (,uint price,) = assetFactory._divisibleAssetsMap(token);
 
         uint256 collateralValue_ = collateral_ * price;
+
+        // valor de ETH en USD
+
+        int256 ethValue = priceConsumer.getLatestPrice();
 
         // E.g. 2:1 will return 20 000 (20 000/10 000=2) for 200%
         return (collateralValue_ * SCALING_FACTOR) / (_totalDebt);

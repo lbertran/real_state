@@ -19,7 +19,7 @@ VARIABLES
 - Position: estructura para la pocisión de cada address. Estan contenidas en el array "positions". Compuesta por: 
     - collateral: cantidad de colateral del token ERC20 stakeado.
     - debt: deuda de la pocisión
-    - lastInterest: último interés
+    - lastInterest: última vez que se calculo el interés y se actualizó la deuda
 
 - procotolTotalCollateral y procotolTotalBorrowed: a fines informativos para visualizar en el frontend
 

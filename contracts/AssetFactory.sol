@@ -12,6 +12,8 @@ contract AssetFactory {
         uint256 lastUpdate;
     }
 
+    mapping(address => Asset) public _divisibleAssetsMap;
+
     function createDivisibleAsset(
         uint256 _initialSupply,
         string memory name_,
@@ -26,6 +28,7 @@ contract AssetFactory {
         );
         Asset memory asset_ = Asset(divisibleAsset, _price, block.timestamp);
         _divisibleAssets.push(asset_); 
+        _divisibleAssetsMap[address(asset_.token)] = asset_;
     }
 
     function allAssets()

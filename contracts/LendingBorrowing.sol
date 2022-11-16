@@ -10,6 +10,8 @@ import "./interfaces/IUniswapV2Router02.sol";
 
 import "hardhat/console.sol";
 
+import "./AssetFactory.sol";
+
 // habrá un contrato de lending por cada token
 // - natspec comments for functions
 
@@ -19,6 +21,7 @@ contract LendingBorrowing is Ownable {
     // VARIABLES
     // ---------------------------------------------------------------------
     address public token;
+    AssetFactory public assetFactory;
 
     struct Position {
         uint256 collateral;
@@ -79,6 +82,7 @@ contract LendingBorrowing is Ownable {
     // ---------------------------------------------------------------------
     constructor(
         address _token,
+        address _assetFactory,
         uint256 _maxLTV,
         uint256 _liqThreshold,
         uint256 _liqFeeProtocol,
@@ -87,6 +91,7 @@ contract LendingBorrowing is Ownable {
         uint256 _interestRate
     ) payable {
         token = _token;
+        assetFactory = AssetFactory(_assetFactory);
         // fees and rates use SCALING_FACTOR 
         maxLTV = _maxLTV;
         liqThreshold = _liqThreshold;
@@ -310,7 +315,7 @@ contract LendingBorrowing is Ownable {
         view
         returns (uint256 interest)
     {
-        // si la pocision esta en 0 y el ultimo interesa calculado es del bloque actual
+        // si la pocision esta en 0 y el ultimo interes calculado es del bloque actual
         // retorna CERO
         if (
             positions[_account].debt == 0 ||
@@ -320,7 +325,7 @@ contract LendingBorrowing is Ownable {
         ) {
             return 0;
         }
-        // si el ultimo interesa calculado no es del bloque actual
+        // si el ultimo interes calculado no es del bloque actual
         uint256 secondsSinceLastInterest_ = block.timestamp -
             positions[_account].lastInterest;
         int128 yearsBorrowed_ = ABDKMath64x64.div(
@@ -384,8 +389,11 @@ contract LendingBorrowing is Ownable {
         }
 
         // TO-DO colRatio debe clacularse a partir del precio de ethereum vs del token colateral
-        // por ahora lo dejamos en 1
-        uint256 collateralValue_ = 1;
+        // primero el valor del colateral en USD
+
+        (,uint price,) = assetFactory._divisibleAssetsMap(token);
+
+        uint256 collateralValue_ = collateral_ * price;
 
         // E.g. 2:1 will return 20 000 (20 000/10 000=2) for 200%
         return (collateralValue_ * SCALING_FACTOR) / (_totalDebt);

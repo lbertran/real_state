@@ -4,13 +4,13 @@ pragma solidity 0.8.7;
 import "./DivisibleAsset.sol";
 
 contract AssetFactory {
-    Asset[] public _divisibleAssets;
 
     struct Asset {
-        DivisibleAsset token;
         uint256 price;
         uint256 lastUpdate;
     }
+
+    mapping(address => Asset) public _divisibleAssets;
 
     function createDivisibleAsset(
         uint256 _initialSupply,
@@ -24,14 +24,15 @@ contract AssetFactory {
             name_,
             symbol_
         );
-        Asset memory asset_ = Asset(divisibleAsset, _price, block.timestamp);
-        _divisibleAssets.push(asset_); 
+        Asset memory asset_ = Asset( _price, block.timestamp);
+        
+        _divisibleAssets[address(divisibleAsset)] = asset_;
     }
 
     function allAssets()
         public
         view
-        returns (Asset[] memory coll)
+        returns (mapping)
     {
         return _divisibleAssets;
     }

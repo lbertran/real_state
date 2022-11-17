@@ -380,12 +380,12 @@ contract LendingBorrowing is Ownable {
 
         // valor de ETH en USD
         // TO-DO: ver como testear el oraaculo
-        // int256 ethValue = priceConsumer.getLatestPrice();
+        int256 ethValue = priceConsumer.getLatestPrice();
         // se hardcodea hasta ver como testear el oraculo
-        int256 ethValue = 119;
+        //int256 ethValue = 119;
 
         // valor de la deuda en USD
-        uint256 _debtValue = _totalDebt * uint256(ethValue);
+        uint256 _debtValue = _totalDebt * uint256(ethValue) / SCALING_FACTOR;
 
         // E.g. 2:1 will return 20 000 (20 000/10 000=2) for 200%
         return (collateralValue_ * SCALING_FACTOR) / (_debtValue);

@@ -16,11 +16,14 @@ describe("LendingBorrowing", function () {
     const transfer_to_otheraccount = 10000;
     const withdraw_to_otheraccount = 7000;
     const borrow_otheraccount = 7000;
+
+    const chainlink_eth = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
+    const chainlink_goerli = '0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e';
     
 
     async function deployContract() {
         const PriceConsumer = await ethers.getContractFactory("PriceConsumer");
-        const priceConsumer = await PriceConsumer.deploy('0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e');
+        const priceConsumer = await PriceConsumer.deploy(chainlink_eth);
 
         const AssetFactory = await ethers.getContractFactory("AssetFactory");
         const assetFactory = await AssetFactory.deploy();

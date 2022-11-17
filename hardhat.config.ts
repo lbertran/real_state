@@ -6,6 +6,8 @@ import "@nomicfoundation/hardhat-toolbox";
 // a new App in its dashboard, and replace "KEY" with its key
 const ALCHEMY_API_KEY = "WUYSQX55luDz6ddEmyvd666x2T4aWe6Q";
 
+const ALCHEMY_API_KEY_ETH = 'YDbpAMOIgqOIpMByI1hhTLXhSU5XFAZM';
+
 // Replace this private key with your Goerli account private key.
 // To export your private key from Metamask, open Metamask and
 // go to Account Details > Export Private Key.
@@ -42,6 +44,13 @@ const config: HardhatUserConfig = {
       url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
       accounts: [GOERLI_PRIVATE_KEY],
     },
+    hardhat: {
+      forking: {
+        // eslint-disable-next-line
+        enabled: true,
+        url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY_ETH}`,
+      }
+    }
   }, 
 };
 

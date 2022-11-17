@@ -140,12 +140,11 @@ contract LendingBorrowing is Ownable {
 
         uint256 withdrawable_;
 
-        
-        uint256 colRatio = getCurrentCollateralRatio(msg.sender);
-
         if (pos.debt == 0) {
             withdrawable_ = pos.collateral;
         } else {
+            uint256 colRatio = getCurrentCollateralRatio(msg.sender);
+
             withdrawable_ =
                 (pos.collateral / colRatio) *
                 (colRatio - borrowThreshold);
@@ -164,7 +163,7 @@ contract LendingBorrowing is Ownable {
     }
 
     // User mints and borrows against collateral
-    function borrow(uint256 _amount) public {
+    function borrow(uint256 _amount) public payable {
         require(_amount > 0, "Amount must be > 0");
 
         Position storage pos = positions[msg.sender];
@@ -184,51 +183,32 @@ contract LendingBorrowing is Ownable {
         pos.debt += (_amount + interest_);
         pos.lastInterest = block.timestamp;
 
-        // TO-DO enviar ETH al msg.sender
+        // enviar ETH al msg.sender
+        (bool sent, ) = msg.sender.call{value: _amount, gas: 20317}("");
+        
+        require(sent, "Failed to send Ether");
+
         emit Borrow(msg.sender, _amount, pos.debt, pos.collateral);
     }
 
     // User repays any interest
-    function repay(uint256 _amount) public {
+    function repay(uint256 _amount) public payable{
+        _amount = msg.value;
+
         require(_amount > 0, "Can't repay 0");
 
         Position storage pos = positions[msg.sender];
+
         uint256 interestDue = calcInterest(msg.sender);
 
         // account for protocol interest revenue
         if (_amount >= interestDue + pos.debt) {
-            // repays all interest and debt
-            // ver como pagar con ETH
-            require(
-                IERC20(token).transferFrom(
-                    msg.sender,
-                    address(this),
-                    pos.debt + interestDue
-                ),
-                "Repay transfer failed"
-            );
             pos.debt = 0;
         } else if (_amount >= interestDue) {
             // repays all interest, starts repaying debt
-            require(
-                IERC20(token).transferFrom(
-                    msg.sender,
-                    address(this),
-                    _amount
-                ),
-                "Repay transfer failed"
-            );
             pos.debt -= (_amount - interestDue);
         } else {
             // repay partial interest, no debt repayment
-            require(
-                IERC20(token).transferFrom(
-                    msg.sender,
-                    address(this),
-                    _amount
-                ),
-                "Repay transfer failed"
-            );
             pos.debt += (interestDue - _amount);
         }
 
@@ -239,7 +219,7 @@ contract LendingBorrowing is Ownable {
     }
 
     // Liquidates account if collateral ratio below safety threshold
-    // Accounts for protocol shortfal as debt (in xSUSHI)
+    // Accounts for protocol shortfal as debt 
     // No protocol interest revenue taken on liquidations,
     // as a protocol liquidation fee is taken instead
     function liquidate(address _account) public {
@@ -319,7 +299,7 @@ contract LendingBorrowing is Ownable {
         view
         returns (uint256 interest)
     {
-        // si la pocision esta en 0 y el ultimo interes calculado es del bloque actual
+        // si la pocision esta en 0 ó el ultimo interes calculado es del bloque actual
         // retorna CERO
         if (
             positions[_account].debt == 0 ||
@@ -391,8 +371,6 @@ contract LendingBorrowing is Ownable {
             // if debt is 0, col ratio is infinite
             return type(uint256).max;
         }
-
-        // TO-DO colRatio debe clacularse a partir del precio de ethereum vs del token colateral
         
         // valor del colateral en USD
 
@@ -401,11 +379,16 @@ contract LendingBorrowing is Ownable {
         uint256 collateralValue_ = collateral_ * price;
 
         // valor de ETH en USD
+        // TO-DO: ver como testear el oraaculo
+        // int256 ethValue = priceConsumer.getLatestPrice();
+        // se hardcodea hasta ver como testear el oraculo
+        int256 ethValue = 119;
 
-        int256 ethValue = priceConsumer.getLatestPrice();
+        // valor de la deuda en USD
+        uint256 _debtValue = _totalDebt * uint256(ethValue);
 
         // E.g. 2:1 will return 20 000 (20 000/10 000=2) for 200%
-        return (collateralValue_ * SCALING_FACTOR) / (_totalDebt);
+        return (collateralValue_ * SCALING_FACTOR) / (_debtValue);
     }
 
     // ---------------------------------------------------------------------

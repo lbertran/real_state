@@ -12,17 +12,28 @@ describe("LendingBorrowing", function () {
     const borrowThreshold = 10;
     const interestRate = 10;
 
+    const asset_price = 10000;
     const transfer_to_otheraccount = 10000;
     const withdraw_to_otheraccount = 7000;
     const borrow_otheraccount = 7000;
     
 
     async function deployContract() {
-        const DivisibleAsset = await ethers.getContractFactory("DivisibleAsset");
-        const divisibleAsset = await DivisibleAsset.deploy(ERC20_INITIALSUPLY, 'Asset1', 'A1');
+        const PriceConsumer = await ethers.getContractFactory("PriceConsumer");
+        const priceConsumer = await PriceConsumer.deploy('0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e');
+
+        const AssetFactory = await ethers.getContractFactory("AssetFactory");
+        const assetFactory = await AssetFactory.deploy();
+        
+        await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset1', 'A1',asset_price);
+
+        const divisibleAsset = await ethers.getContractAt("DivisibleAsset", (await assetFactory._divisibleAssets(0)).token);
+
         const LendingBorrowing = await ethers.getContractFactory("LendingBorrowing");
         const lendingBorrowing = await LendingBorrowing.deploy(
             divisibleAsset.address,
+            assetFactory.address,
+            priceConsumer.address,
             maxLTV,
             liqThreshold,
             liqFeeProtocol,
@@ -57,7 +68,7 @@ describe("LendingBorrowing", function () {
     });
     describe("Deposit", function () {
         it("Should revert with Amount must be > 0", async function () {
-            const {lendingBorrowing, divisibleAsset, otherAccount} = await loadFixture(deployContract);
+            const {lendingBorrowing} = await loadFixture(deployContract);
 
             await expect(lendingBorrowing.deposit(0)).to.be.revertedWith('Amount must be > 0');
         });
@@ -132,6 +143,8 @@ describe("LendingBorrowing", function () {
             await divisibleAsset.transfer(otherAccount.address, transfer_to_otheraccount); 
             await divisibleAsset.connect(otherAccount).approve(lendingBorrowing.address, transfer_to_otheraccount);            
             await lendingBorrowing.connect(otherAccount).deposit(transfer_to_otheraccount);  
+            
+            console.log(await lendingBorrowing.assetFactory());
 
             await lendingBorrowing.connect(otherAccount).borrow(100);
 

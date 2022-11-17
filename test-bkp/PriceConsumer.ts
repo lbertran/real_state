@@ -12,7 +12,7 @@ describe("PriceConsumer", function () {
 
     async function deployContract() {
         const PriceConsumer = await ethers.getContractFactory("PriceConsumer");
-        const priceConsumer = await PriceConsumer.deploy();
+        const priceConsumer = await PriceConsumer.deploy("0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e");
         
         /* const LPToken = await ethers.getContractFactory("LPToken");
         const lPToken = await LPToken.deploy(ERC20_INITIALSUPLY);

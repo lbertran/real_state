@@ -45,13 +45,13 @@ describe("AssetFactory", function () {
             const asset2_address = (await assetFactory._divisibleAssets(1)).token;
             const asset3_address = (await assetFactory._divisibleAssets(2)).token;
             
-            console.log("A1 address at: ", asset1_address);
+            /* console.log("A1 address at: ", asset1_address);
             console.log("A2 address at: ", asset2_address);
-            console.log("A3 address at: ", asset3_address);
+            console.log("A3 address at: ", asset3_address); */
 
-            const asset1 = DivisibleAsset.attach(asset1_address);
-            const asset2 = DivisibleAsset.attach(asset2_address);
-            const asset3 = DivisibleAsset.attach(asset3_address);
+            const asset1 = await ethers.getContractAt("DivisibleAsset", (asset1_address));
+            const asset2 = await ethers.getContractAt("DivisibleAsset", (asset2_address));
+            const asset3 = await ethers.getContractAt("DivisibleAsset", (asset3_address));
 
 
             expect(await asset1.name()).to.equal('Asset1');
@@ -62,6 +62,15 @@ describe("AssetFactory", function () {
 
             expect(await asset3.name()).to.equal('Asset3');
             expect(await asset3.symbol()).to.equal('A3');
+
+            // compara el arreglo y el map
+            const map1 = await assetFactory._divisibleAssetsMap(asset1_address);
+            const map2 = await assetFactory._divisibleAssetsMap(asset2_address);
+            const map3 = await assetFactory._divisibleAssetsMap(asset3_address);
+            
+            expect(asset1_address).to.equal(map1.token);
+            expect(asset2_address).to.equal(map2.token);
+            expect(asset3_address).to.equal(map3.token);
         });
 
         it("Should create multiple DivisibleAsset and return collection", async function () {

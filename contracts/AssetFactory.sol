@@ -26,9 +26,15 @@ contract AssetFactory {
             name_,
             symbol_
         );
+        
+        require(DivisibleAsset(divisibleAsset).transfer(msg.sender, _initialSupply),'Transfer to creator failed');
+        
         Asset memory asset_ = Asset(divisibleAsset, _price, block.timestamp);
         _divisibleAssets.push(asset_); 
         _divisibleAssetsMap[address(asset_.token)] = asset_;
+
+        // create Lending & Borrowing Contract
+
     }
 
     function allAssets()

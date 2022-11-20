@@ -48,3 +48,14 @@ Vs code plugins:
 - hardhat
 - solidity visual developer - consensy
 - ETHover
+
+
+frontend
+--------
+basado en hardhat boilerplate
+https://hardhat.org/tutorial/boilerplate-project
+
+const chainlink_eth = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
+const chainlink_goerli = '0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e';
+
+los archivos en frontend/src/contracts son generados en el deploy.ts de los SC

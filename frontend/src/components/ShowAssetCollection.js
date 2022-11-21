@@ -9,14 +9,17 @@ export function ShowAssetCollection({ assetsCollection }) {
   const listItems = numbers.map((number) =>
     <li>{number}</li>
   ); */
-
-  assetsCollection.forEach(async element => {
-    await getAssetName(element)
-  });
   
-  const listItems = assetsCollection.map(async (asset) =>
-    <li></li>
+  /* await assetsCollection.forEach(async element => {
+    let nombre = await getAssetName(element);
+    listNames.push(<li>{nombre}</li>);
+  }); */
+  
+  const listItems = assetsCollection.map(asset =>
+  <li>{asset.token}</li>
   );
+
+  console.log(listItems);
     
   return (
     <div>

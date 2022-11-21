@@ -20,7 +20,7 @@ import LendingBorrowingArtifact from "../contracts/LendingBorrowing.json";
 import { NoWalletDetected } from "./NoWalletDetected";
 import { ConnectWallet } from "./ConnectWallet";
 import { Loading } from "./Loading";
-import { Transfer } from "./Transfer";
+import { AssetTokenization } from "./AssetTokenization";
 import { TransactionErrorMessage } from "./TransactionErrorMessage";
 import { WaitingForTransactionMessage } from "./WaitingForTransactionMessage";
 import { NoAssetsMessage } from "./NoAssetsMessage";
@@ -132,6 +132,12 @@ export class Dapp extends React.Component {
                 dismiss={() => this._dismissTransactionError()}
               />
             )}
+            {this.state.transactionError && (
+              <TransactionErrorMessage
+                message={this._getRpcErrorMessage(this.state.transactionError)}
+                dismiss={() => this._dismissTransactionError()}
+              />
+            )}
           </div>
         </div>
 
@@ -153,6 +159,13 @@ export class Dapp extends React.Component {
             {this.state.assetsCollection.length > 0 && (
               <div>
               <ShowAssetCollection assetsCollection={this.state.assetsCollection} />
+              </div>
+            )}
+            {this.state.assetsCollection.length > 0 && (
+              <div>
+              <AssetTokenization createDivisibleAsset={(_initialSupply, name_, symbol_, _price) =>
+                  this._createDivisibleAsset(_initialSupply, name_, symbol_, _price)
+                } />
               </div>
             )}
           </div>
@@ -278,7 +291,7 @@ export class Dapp extends React.Component {
   // This method sends an ethereum transaction to transfer tokens.
   // While this action is specific to this application, it illustrates how to
   // send a transaction.
-  async _transferTokens(to, amount) {
+  async _createDivisibleAsset(_initialSupply, name_, symbol_, _price) {
     // Sending a transaction is a complex operation:
     //   - The user can reject it
     //   - It can fail before reaching the ethereum network (i.e. if the user
@@ -300,19 +313,19 @@ export class Dapp extends React.Component {
 
       // We send the transaction, and save its hash in the Dapp's state. This
       // way we can indicate that we are waiting for it to be mined.
-      const tx = await this._token.transfer(to, amount);
-      this.setState({ txBeingSent: tx.hash });
+      //const tx = await this._token.transfer(to, amount);
+      //this.setState({ txBeingSent: tx.hash });
 
       // We use .wait() to wait for the transaction to be mined. This method
       // returns the transaction's receipt.
-      const receipt = await tx.wait();
+      //const receipt = await tx.wait();
 
       // The receipt, contains a status flag, which is 0 to indicate an error.
-      if (receipt.status === 0) {
+      /* if (receipt.status === 0) {
         // We can't know the exact error that made the transaction fail when it
         // was mined, so we throw this generic one.
         throw new Error("Transaction failed");
-      }
+      } */
 
       // If we got here, the transaction was successful, so you may want to
       // update your state. 

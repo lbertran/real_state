@@ -1,4 +1,4 @@
-## SMART CONTRACTS
+# SMART CONTRACTS
 
 ## DivisibleAsset
 
@@ -7,7 +7,7 @@ Cada inmueble tokenizado por esta vía tendrá su propio contrato ERC20.
 
 ## AssetFactory
 
-Es el contrato que genera un contrato ERC20 (DivisibleAsset) o ERC1155 por cada inmueble tokenizado.
+Es el contrato que genera un contrato ERC20 (DivisibleAsset) por cada activo tokenizado.
 Utiliza el Factory Pattern
 
 ## LendingBorrowing
@@ -37,6 +37,8 @@ VARIABLES
 
 - scaling factor: El factor de escala es un multiplicador que afecta la tasa de interés de los préstamos
 
+- SECONDS_IN_YEAR: for compound interest math
+
 INTERÉS
 Se utiliza interés compuesto continuo.
 
@@ -46,4 +48,8 @@ donde:
 - P: deuda
 - i: tasa de interes sobre el scalling factor
 - t: tiempo en años
+
+## LendingBorrowingFactory
+Es el contrato que genera un contrato de Lendgin&Borrowing por cada activo tokenizado con un ERC20.
+
 

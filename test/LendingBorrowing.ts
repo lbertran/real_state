@@ -23,7 +23,7 @@ describe("LendingBorrowing", function () {
 
     async function deployContract() {
         const PriceConsumer = await ethers.getContractFactory("PriceConsumer");
-        const priceConsumer = await PriceConsumer.deploy(chainlink_eth);
+        const priceConsumer = await PriceConsumer.deploy(chainlink_goerli);
 
         const AssetFactory = await ethers.getContractFactory("AssetFactory");
         const assetFactory = await AssetFactory.deploy();

@@ -80,7 +80,10 @@ describe("AssetFactory", function () {
             const tx_asset2 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset2', 'A2',2000);
             const tx_asset3 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset3', 'A3',3000);
 
-            console.log(await assetFactory.allAssets());
+
+            const assetsArray = await assetFactory.allAssets();
+            expect(assetsArray.length).to.equal(3);
+            
         });
       });
 });

@@ -14,19 +14,22 @@ contract AssetFactory {
 
     mapping(address => Asset) public _divisibleAssetsMap;
 
+    uint256 public constant ETH_FACTOR = 10;
+
     function createDivisibleAsset(
         uint256 _initialSupply,
         string memory name_,
         string memory symbol_,
         uint256 _price
         
-    ) public {
+    ) public payable {
         DivisibleAsset divisibleAsset = new DivisibleAsset(
             _initialSupply,
             name_,
             symbol_
         );
-        
+        //require(msg.value>=_price * _initialSupply / ETH_FACTOR , 'Not enough Ether');
+
         require(DivisibleAsset(divisibleAsset).transfer(msg.sender, _initialSupply),'Transfer to creator failed');
         
         Asset memory asset_ = Asset(divisibleAsset, _price, block.timestamp);

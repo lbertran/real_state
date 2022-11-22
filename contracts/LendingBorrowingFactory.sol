@@ -7,6 +7,8 @@ contract LendingBorrowingFactory {
     
     mapping(address => address) public _lendingBorrowingContractsForTokens;
 
+     address[] public _lendingBorrowingContracts;
+
     function createLendingBorrowing(
         address _token,
         address _assetFactory,
@@ -29,6 +31,15 @@ contract LendingBorrowingFactory {
             _borrowThreshold,
             _interestRate
         );
+        _lendingBorrowingContracts.push(address(lendingBorrowing));
         _lendingBorrowingContractsForTokens[_token] = address(lendingBorrowing);
+    }
+
+    function allProtocols()
+        public
+        view
+        returns (address[] memory coll)
+    {
+        return _lendingBorrowingContracts;
     }
 }

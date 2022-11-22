@@ -8,11 +8,14 @@ describe("PriceConsumer", function () {
     const LPTOKEN_OTHERACCOUNT = 50e10;
     const STAKING_OTHERACCOUNT = 30e10;
     const ONE_WEEK_IN_SECS = 7 * 24 * 60 * 60;
+
+    const chainlink_eth = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
+    const chainlink_goerli = '0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e';
     
 
     async function deployContract() {
         const PriceConsumer = await ethers.getContractFactory("PriceConsumer");
-        const priceConsumer = await PriceConsumer.deploy("0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e");
+        const priceConsumer = await PriceConsumer.deploy(chainlink_goerli);
         
         /* const LPToken = await ethers.getContractFactory("LPToken");
         const lPToken = await LPToken.deploy(ERC20_INITIALSUPLY);

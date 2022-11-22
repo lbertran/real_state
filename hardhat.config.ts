@@ -44,13 +44,13 @@ const config: HardhatUserConfig = {
       url: `https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
       accounts: [GOERLI_PRIVATE_KEY],
     },
-   /*  hardhat: {
+    hardhat: {
       forking: {
         // eslint-disable-next-line
         enabled: true,
-        url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY_ETH}`,
+        url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
       }
-    } */
+    }
   }, 
 };
 

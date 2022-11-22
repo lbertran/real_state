@@ -1,3 +1,35 @@
+# REAL STATE TOKENIZATION
+
+## Introducción
+
+El proyecto consiste en una plataforma mediante la cual se podrán tokenizar activos mediante un token ERC20.
+
+Luego estos tokens podrán ser utilizados en un procolo de Lending & Borrowing.
+
+# Ejecución
+
+- Testear en fork goerli: para esto se incluye en el archivo hardhat.config.ts la siguiente red
+
+```
+ networks: {
+        hardhat: {
+          forking: {
+            // eslint-disable-next-line
+            enabled: true,
+            url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      }
+```
+Luego tan solo levantar el nodo con:
+
+```
+npx hardhat node
+```
+
+y correr los tests con 
+
+```
+npx hardhat test
+```
 # SMART CONTRACTS
 
 ## DivisibleAsset
@@ -52,4 +84,5 @@ donde:
 ## LendingBorrowingFactory
 Es el contrato que genera un contrato de Lendgin&Borrowing por cada activo tokenizado con un ERC20.
 
-
+## PriceConsumer
+Es el contrato obtiene el precio en USD de ETH a través de un oráculo de ChainLink

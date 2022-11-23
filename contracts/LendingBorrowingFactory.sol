@@ -19,7 +19,10 @@ contract LendingBorrowingFactory {
         uint256 _liqFeeSender,
         uint256 _borrowThreshold,
         uint256 _interestRate
-    ) public {
+    ) 
+        public
+        returns (address) 
+    {
         LendingBorrowing lendingBorrowing = new LendingBorrowing(
              _token,
             _assetFactory,
@@ -33,6 +36,8 @@ contract LendingBorrowingFactory {
         );
         _lendingBorrowingContracts.push(address(lendingBorrowing));
         _lendingBorrowingContractsForTokens[_token] = address(lendingBorrowing);
+
+        return address(lendingBorrowing);
     }
 
     function allProtocols()

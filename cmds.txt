@@ -29,26 +29,6 @@ npm install @openzeppelin/contracts-upgradeable
 
 ------------------------------------------------------
 
-patrones
-
-factory
--------
-https://www.youtube.com/watch?v=eTBSQqgGbJk
-https://blog.logrocket.com/cloning-solidity-smart-contracts-factory-pattern/
-
-acceder a contrato creado desde factory
-https://www.youtube.com/watch?v=HFS91c2tAms&list=PL2adUX6Utt_38aQrMHnhJUAqSH15OFxlk&index=10
-
-clones
--------
-https://blog.openzeppelin.com/workshop-recap-cheap-contract-deployment-through-clones/
-
-Vs code plugins:
-- solidity juan blanco
-- hardhat
-- solidity visual developer - consensy
-- ETHover
-
 
 frontend
 --------

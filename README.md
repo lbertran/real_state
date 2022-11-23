@@ -6,7 +6,29 @@ El proyecto consiste en una plataforma mediante la cual se podrán tokenizar act
 
 Luego estos tokens podrán ser utilizados en un procolo de Lending & Borrowing.
 
+## Tokenomics
+
+### Tokenización
+
+- Se crea un ERC20 que representa al activo. 
+
+- Se debe especifica la cantidad a emitir y el precio de 1 token en el momento de la creación.
+
+- El creador debe depositar el 10% del precio en ETH, que serán devueltos al venderse el 90% de la propiedad. Estos ETH formarán parte del vault del protocolo de lending & borrowing. El creador a su vez percibirá los intereses de hacer staking de esos ETH (en ETH).
+
+- Los tokens creados serán transferidos al creador.
+
+### Lending & Borrowing
+
+- Existirá un SC de L&B por cada ERC20 creado en la tokenización.
+
+- Lending: se depositarán ERC20.
+
+- Borrowing: se prestarán ETH del protocolo.
+
 # Ejecución
+
+## Testing
 
 - Testear en fork goerli: para esto se incluye en el archivo hardhat.config.ts la siguiente red
 
@@ -30,7 +52,22 @@ y correr los tests con
 ```
 npx hardhat test
 ```
+## Deploy
+
+npx hardhat run --network goerli scripts/deploy.ts
+
+También se crearán los archivos necesarios para el funcionamiento de la DApp
+
+verificar los contratos creados para poder usar etherscan (address del contrato y parametros iniciales - en wei )
+npx hardhat verify --network goerli 0x747BDe2008be9388ecE5A1853B354D969B752E2D
+
 # SMART CONTRACTS
+
+## Controller
+Controla toda la operación, envía peticiones a AssetFactory y LendingBorrowingFactory
+
+## PriceConsumer
+Es el contrato que obtiene el precio en USD de ETH a través de un oráculo de ChainLink
 
 ## DivisibleAsset
 
@@ -84,5 +121,4 @@ donde:
 ## LendingBorrowingFactory
 Es el contrato que genera un contrato de Lendgin&Borrowing por cada activo tokenizado con un ERC20.
 
-## PriceConsumer
-Es el contrato obtiene el precio en USD de ETH a través de un oráculo de ChainLink
+

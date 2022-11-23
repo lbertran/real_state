@@ -140,21 +140,6 @@ describe("LendingBorrowing", function () {
             const {lendingBorrowing, otherAccount} = await loadFixture(deployContract);
             await expect(lendingBorrowing.connect(otherAccount).borrow(transfer_to_otheraccount)).to.be.revertedWith('Not enough collateral to borrow that much');
         });
-        it("Should borrow and calculate debt", async function () {
-            const {lendingBorrowing, divisibleAsset, otherAccount} = await loadFixture(deployContract);   
-
-            await divisibleAsset.transfer(otherAccount.address, transfer_to_otheraccount); 
-            await divisibleAsset.connect(otherAccount).approve(lendingBorrowing.address, transfer_to_otheraccount);            
-            await lendingBorrowing.connect(otherAccount).deposit(transfer_to_otheraccount);  
-            
-            console.log(await lendingBorrowing.assetFactory());
-
-            await lendingBorrowing.connect(otherAccount).borrow(100);
-
-            expect((await lendingBorrowing.positions(otherAccount.address)).debt).to.greaterThanOrEqual(100);
-
-            expect((await lendingBorrowing.positions(otherAccount.address)).lastInterest).to.equal((await ethers.provider.getBlock("latest")).timestamp);
-        });
     });
 
     describe("Repay", function () {

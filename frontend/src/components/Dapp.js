@@ -10,6 +10,7 @@ import contractAddress from "../contracts/contract-address.json";
 import AssetFactoryArtifact from "../contracts/AssetFactory.json";
 import LendingBorrowingFactoryArtifact from "../contracts/LendingBorrowingFactory.json";
 import PriceConsumerArtifact from "../contracts/PriceConsumer.json";
+import ControllerArtifact from "../contracts/Controller.json";
 import DivisibleAssetArtifact from "../contracts/DivisibleAsset.json";
 import LendingBorrowingArtifact from "../contracts/LendingBorrowing.json";
 
@@ -20,12 +21,11 @@ import LendingBorrowingArtifact from "../contracts/LendingBorrowing.json";
 import { NoWalletDetected } from "./NoWalletDetected";
 import { ConnectWallet } from "./ConnectWallet";
 import { Loading } from "./Loading";
-import { AssetTokenization } from "./AssetTokenization";
 import { TransactionErrorMessage } from "./TransactionErrorMessage";
 import { WaitingForTransactionMessage } from "./WaitingForTransactionMessage";
 import { NoAssetsMessage } from "./NoAssetsMessage";
 import { ShowAssetCollection } from "./ShowAssetCollection";
-import { CreateLendingProtocol } from "./CreateLendingProtocol";
+import { AssetTokenization } from "./AssetTokenization";
 
 // This is the Hardhat Network id that we set in our hardhat.config.js.
 // Here's a list of network ids https://docs.metamask.io/guide/ethereum-provider.html#properties
@@ -163,21 +163,21 @@ export class Dapp extends React.Component {
               </div>
             )}
             <hr />
-            {this.state.assetsCollection.length > 0 && (
+            {(
               <div>
-              <AssetTokenization createDivisibleAsset={(_initialSupply, name_, symbol_, _price) =>
-                  this._createDivisibleAsset(_initialSupply, name_, symbol_, _price)
+              <AssetTokenization createDivisibleAsset={(_initialSupply, name_, symbol_, _price,_maxLTV , _liqThreshold , _liqFeeProtocol , _liqFeeSender , _borrowThreshold , _interestRate) =>
+                  this._createDivisibleAsset(_initialSupply, name_, symbol_, _price, _maxLTV , _liqThreshold , _liqFeeProtocol , _liqFeeSender , _borrowThreshold , _interestRate)
                 } />
               </div>
             )}
             <hr />
-             {this.state.assetsCollection.length > 0 && (
+            {/*  {this.state.assetsCollection.length > 0 && (
               <div>
               <CreateLendingProtocol createLendingProtocol={(_token, _maxLTV , _liqThreshold , _liqFeeProtocol , _liqFeeSender , _borrowThreshold , _interestRate) =>
                   this._createLendingProtocol(_token, contractAddress.AssetFactory , contractAddress.PriceConsumer , _maxLTV , _liqThreshold , _liqFeeProtocol , _liqFeeSender , _borrowThreshold , _interestRate)
                 } />
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -269,6 +269,12 @@ export class Dapp extends React.Component {
       PriceConsumerArtifact.abi,
       this._provider.getSigner(0)
     );
+
+    this._controller = new ethers.Contract(
+      contractAddress.Controller,
+      ControllerArtifact.abi,
+      this._provider.getSigner(0)
+    );
   }
 
   // The next two methods are needed to start and stop polling data. While
@@ -301,7 +307,7 @@ export class Dapp extends React.Component {
   // This method sends an ethereum transaction to transfer tokens.
   // While this action is specific to this application, it illustrates how to
   // send a transaction.
-  async _createDivisibleAsset(_initialSupply, name_, symbol_, _price) {
+  async _createDivisibleAsset(_initialSupply, name_, symbol_, _price, _maxLTV , _liqThreshold , _liqFeeProtocol , _liqFeeSender , _borrowThreshold , _interestRate) {
     // Sending a transaction is a complex operation:
     //   - The user can reject it
     //   - It can fail before reaching the ethereum network (i.e. if the user
@@ -323,7 +329,7 @@ export class Dapp extends React.Component {
 
       // We send the transaction, and save its hash in the Dapp's state. This
       // way we can indicate that we are waiting for it to be mined.
-      const tx = await this._assetFactory.createDivisibleAsset(_initialSupply, name_, symbol_, _price);
+      const tx = await this._controller.createAssetAndProtocol(_initialSupply, name_, symbol_, _price, _maxLTV , _liqThreshold , _liqFeeProtocol , _liqFeeSender , _borrowThreshold , _interestRate);
       this.setState({ txBeingSent: tx.hash });
 
       // We use .wait() to wait for the transaction to be mined. This method
@@ -357,7 +363,7 @@ export class Dapp extends React.Component {
     }
   }
 
-  async _createLendingProtocol(_token, _assetFactory , _priceConsumer , _maxLTV , _liqThreshold , _liqFeeProtocol , _liqFeeSender , _borrowThreshold , _interestRate) {
+ /*  async _createLendingProtocol(_token, _assetFactory , _priceConsumer , _maxLTV , _liqThreshold , _liqFeeProtocol , _liqFeeSender , _borrowThreshold , _interestRate) {
     // Sending a transaction is a complex operation:
     //   - The user can reject it
     //   - It can fail before reaching the ethereum network (i.e. if the user
@@ -411,7 +417,7 @@ export class Dapp extends React.Component {
       // this part of the state.
       this.setState({ txBeingSent: undefined });
     }
-  }
+  } */
 
   // This method just clears part of the state.
   _dismissTransactionError() {

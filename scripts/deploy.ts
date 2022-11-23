@@ -22,6 +22,10 @@ async function main() {
   const controller = await Controller.deploy();
   await controller.deployed();
 
+  await controller.setAssetFactory(assetFactory.address);
+  await controller.setLendingBorrowingFactory(lendingBorrowingFactory.address);
+  await controller.setPriceConsumer(priceConsumer.address);
+
   saveFrontendFiles(priceConsumer, assetFactory, lendingBorrowingFactory, controller);
 
   console.log(await priceConsumer.getLatestPrice());

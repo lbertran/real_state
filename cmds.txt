@@ -1,8 +1,6 @@
 npm install --save-dev hardhat
-
 npx hardhat
 npm install --save-dev "hardhat@^2.12.2" "@nomicfoundation/hardhat-toolbox@^2.0.0"
-
 npm install @openzeppelin/contracts
 npm install alchemy-sdk
 

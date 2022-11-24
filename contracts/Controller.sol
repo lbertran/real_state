@@ -33,7 +33,11 @@ contract Controller {
         
     ) public payable {
 
-        require(msg.value>=_price * _initialSupply / ETH_FACTOR , 'Not enough Ether');
+        int256 ethValue = priceConsumer.getLatestPrice();
+
+        uint256 msg_value_in_usd = msg.value * uint256(ethValue);
+
+        require(msg_value_in_usd>=_price * _initialSupply / ETH_FACTOR , 'Not enough Ether');
 
         address _token = assetFactory.createDivisibleAsset(_initialSupply, name_, symbol_, _price);
 
@@ -55,6 +59,7 @@ contract Controller {
         require(sent, "Failed to send Ether");
 
         emit createAssetAndProtocolEvent(_token, _protocol, msg.value);
+        
 
     }
 

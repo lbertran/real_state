@@ -59,7 +59,7 @@ npx hardhat run --network goerli scripts/deploy.ts
 También se crearán los archivos necesarios para el funcionamiento de la DApp
 
 verificar los contratos creados para poder usar etherscan (address del contrato y parametros iniciales - en wei )
-npx hardhat verify --network goerli 0x747BDe2008be9388ecE5A1853B354D969B752E2D
+npx hardhat verify --network goerli direccion-del-contrato
 
 ## Frontend
 

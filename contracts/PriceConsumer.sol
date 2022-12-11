@@ -7,11 +7,6 @@ contract PriceConsumer {
 
     AggregatorV3Interface internal priceFeed;
 
-    /**
-     * Network: Goerli
-     * Aggregator: ETH/USD
-     * Address: 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e
-     */
     constructor(address _AggregatorV3Interface) {
         priceFeed = AggregatorV3Interface(_AggregatorV3Interface);
     }

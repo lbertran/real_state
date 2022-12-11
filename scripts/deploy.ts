@@ -1,13 +1,11 @@
 import { artifacts, ethers, network } from "hardhat";
 import path from "path";
+import {eth_ethusd, goerli_ethusd} from "./priceConsumer.json";
 
 async function main() { 
 
-  const chainlink_eth = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
-  const chainlink_goerli = '0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e';
-
   const PriceConsumer = await ethers.getContractFactory("PriceConsumer");
-  const priceConsumer = await PriceConsumer.deploy(chainlink_goerli);
+  const priceConsumer = await PriceConsumer.deploy(goerli_ethusd);
   await priceConsumer.deployed();
 
   const AssetFactory = await ethers.getContractFactory("AssetFactory");

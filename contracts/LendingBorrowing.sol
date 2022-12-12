@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./utils/ABDKMath64x64.sol";
-import "./interfaces/IUniswapV2Router02.sol";
 
 import "hardhat/console.sol";
 
@@ -374,7 +373,7 @@ contract LendingBorrowing is Ownable {
         
         // valor del colateral en USD
 
-        (,uint price,) = assetFactory._divisibleAssetsMap(token);
+        (,uint price,) = assetFactory.divisibleAssetsMap(token);
 
         uint256 collateralValue_ = collateral_ * price;
 

@@ -4,8 +4,9 @@ pragma solidity 0.8.7;
 import "./AssetFactory.sol";
 import "./LendingBorrowingFactory.sol";
 import "./PriceConsumer.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract Controller {
+contract Controller is AccessControl {
 
     AssetFactory public assetFactory;
     LendingBorrowingFactory public lendingBorrowingFactory;
@@ -13,12 +14,31 @@ contract Controller {
     
     uint256 public constant ETH_FACTOR = 10;
 
-    event createAssetAndProtocolEvent(
+    event AssetAndProtocolCreated(
         address indexed token,
         address indexed protocol,
         uint256 ethSupply
     );
 
+    event AssetFactorySeted(
+        address indexed _assetFactory
+    );
+
+    event LendingBorrowingFactorySeted(
+        address indexed _lendingBorrowingFactory
+    );
+
+    event PriceConsumerSeted (
+        address indexed _priceConsumer
+    );    
+
+    constructor(address _assetFactory, address _lendingBorrowingFactory, address _priceConsumer) {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); 
+        assetFactory = AssetFactory(_assetFactory);
+        lendingBorrowingFactory = LendingBorrowingFactory(_lendingBorrowingFactory);
+        priceConsumer = PriceConsumer(_priceConsumer);
+    }
+    
     function createAssetAndProtocol(
         uint256 _initialSupply,
         string memory name_,
@@ -31,13 +51,23 @@ contract Controller {
         uint256 _borrowThreshold,
         uint256 _interestRate
         
-    ) public payable {
+    ) external payable {
+        // initialSupply es la cantidad de tokens en que se fraccionará el activo
 
-        int256 ethValue = priceConsumer.getLatestPrice();
+        // se trabajará con valores en USD y 2 decimales 
 
-        uint256 msg_value_in_usd = msg.value * uint256(ethValue);
+        // el valor de ETH en USD se obtiene con 8 decimales, los cuales se corrigen a 2
+        uint256 ethValueInUSD = uint256(priceConsumer.getLatestPrice() / 1e6); 
 
-        require(msg_value_in_usd>=_price * _initialSupply / ETH_FACTOR , 'Not enough Ether');
+        // se corrije el msg.value a 2 decimales
+        uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD;
+
+        // en esta cuenta
+        //  _price = precio de la propiedad en USD
+        //  msgValueInUSD = msg.value en USD
+        // ETH_FACTOR = cantidad de eth inicial que debe depositarse para tokenizar
+
+        require(msgValueInUSD >= _price / ETH_FACTOR , 'Not enough Ether');
 
         address _token = assetFactory.createDivisibleAsset(_initialSupply, name_, symbol_, _price);
 
@@ -58,27 +88,33 @@ contract Controller {
 
         require(sent, "Failed to send Ether");
 
-        emit createAssetAndProtocolEvent(_token, _protocol, msg.value);
+        emit AssetAndProtocolCreated(_token, _protocol, msg.value);
         
 
     }
 
 
     function setAssetFactory(address _assetFactory)
-        public
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {
         assetFactory = AssetFactory(_assetFactory);
+        emit AssetFactorySeted(_assetFactory);
     }
 
     function setLendingBorrowingFactory(address _lendingBorrowingFactory)
-        public
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {
         lendingBorrowingFactory = LendingBorrowingFactory(_lendingBorrowingFactory);
+        emit LendingBorrowingFactorySeted(_lendingBorrowingFactory);
     }
 
     function setPriceConsumer(address _priceConsumer)
-        public
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {
         priceConsumer = PriceConsumer(_priceConsumer);
+        emit PriceConsumerSeted(_priceConsumer);
     }
 }

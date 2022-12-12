@@ -17,12 +17,6 @@ describe("PriceConsumer", function () {
         const PriceConsumer = await ethers.getContractFactory("PriceConsumer");
         const priceConsumer = await PriceConsumer.deploy(chainlink_goerli);
         
-        /* const LPToken = await ethers.getContractFactory("LPToken");
-        const lPToken = await LPToken.deploy(ERC20_INITIALSUPLY);
-
-        const TokenFarm = await ethers.getContractFactory("TokenFarmBonus");
-        const tokenFarm = await TokenFarm.deploy(dappToken.address, lPToken.address); */
-        
         const [owner, otherAccount, secondAccount] = await ethers.getSigners();
         
         return { priceConsumer, owner, otherAccount, secondAccount };

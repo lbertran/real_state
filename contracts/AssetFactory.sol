@@ -2,26 +2,40 @@
 pragma solidity 0.8.7;
 
 import "./DivisibleAsset.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract AssetFactory {
-    Asset[] public _divisibleAssets;
+contract AssetFactory is AccessControl{
 
+    //TO-DO: agregar eventos
+    using SafeERC20 for DivisibleAsset;
+    
+    using EnumerableMap for EnumerableMap.UintToAddressMap;
+
+    EnumerableMap.UintToAddressMap private divisibleAssets;
+    
     struct Asset {
         DivisibleAsset token;
         uint256 price;
         uint256 lastUpdate;
     }
 
-    mapping(address => Asset) public _divisibleAssetsMap;
+    mapping(address => Asset) public divisibleAssetsMap;
 
-    function createDivisibleAsset(
+    constructor() {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);   
+    }
+
+    function createDivisibleAsset (
         uint256 _initialSupply,
         string memory name_,
         string memory symbol_,
         uint256 _price
         
     ) 
-        public
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
         returns (address)
     {
         DivisibleAsset divisibleAsset = new DivisibleAsset(
@@ -30,23 +44,49 @@ contract AssetFactory {
             symbol_
         );
 
-        require(DivisibleAsset(divisibleAsset).transfer(msg.sender, _initialSupply),'Transfer to creator failed');
+        //require(DivisibleAsset(divisibleAsset).transfer(msg.sender, _initialSupply),'Transfer to creator failed');
         
+        DivisibleAsset(divisibleAsset).safeTransfer(msg.sender, _initialSupply);
+
         Asset memory asset_ = Asset(divisibleAsset, _price, block.timestamp);
-        _divisibleAssets.push(asset_); 
-        _divisibleAssetsMap[address(asset_.token)] = asset_;
+        
+        divisibleAssetsMap[address(asset_.token)] = asset_;
+
+        uint256 _key = divisibleAssets.length();
+
+        divisibleAssets.set(_key, address(asset_.token));
 
         return address(asset_.token);
 
     }
 
-    function allAssets()
-        public
+    function divisibleAssetsLength()
+        external
         view
-        returns (Asset[] memory coll)
+        returns (uint256)
     {
-        return _divisibleAssets;
+        return divisibleAssets.length();
     }
 
-    //TO-DO: actualizar precio del asset
+    function divisibleAssetAddress(
+        uint256 _key
+    )
+        external
+        view
+        returns (address)
+    {
+        return divisibleAssets.get(_key);
+    }
+
+    
+    function updateAssetPrice(
+        address _address,
+        uint _price
+    ) 
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        require(_price>0,'Price cannot be zero.');
+        divisibleAssetsMap[_address].price = _price;
+    }
 }

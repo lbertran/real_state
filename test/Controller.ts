@@ -4,7 +4,12 @@ import { ethers } from "hardhat";
 import { mine } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("LendingBorrowing", function () {
-    const ERC20_INITIALSUPLY = 100e10;
+    
+    // create asset params
+    const initialSupply = 10;
+    const name = 'Propiedad 1';
+    const symbol = 'PROP1';
+    const asset_price = 10000;
     const maxLTV = 80;
     const liqThreshold = 75;
     const liqFeeProtocol = 5;
@@ -12,16 +17,14 @@ describe("LendingBorrowing", function () {
     const borrowThreshold = 10;
     const interestRate = 10;
 
-    const initialSupply = 10;
-    const name = 'Propiedad 1';
-    const symbol = 'PROP1';
-    const asset_price = 10000;
     const transfer_to_otheraccount = 10000;
     const withdraw_to_otheraccount = 7000;
     const borrow_otheraccount = 7000;
 
     const chainlink_eth = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
     const chainlink_goerli = '0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e';
+
+    const fake_smart_contract = '0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e';
     
 
     async function deployContract() {
@@ -35,13 +38,7 @@ describe("LendingBorrowing", function () {
         const lendingBorrowingFactory = await LendingBorrowingFactory.deploy();
 
         const Controller = await ethers.getContractFactory("Controller");
-        const controller = await Controller.deploy();
-
-        await controller.setPriceConsumer(priceConsumer.address);
-        await controller.setAssetFactory(assetFactory.address);
-        await controller.setLendingBorrowingFactory(lendingBorrowingFactory.address);
-        
-        await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset1', 'A1',asset_price);
+        const controller = await Controller.deploy(assetFactory.address, lendingBorrowingFactory.address, priceConsumer.address);
 
         const [owner, otherAccount, secondAccount] = await ethers.getSigners(); 
 
@@ -51,16 +48,33 @@ describe("LendingBorrowing", function () {
     describe("Deployment", function () {
       it("Should deploy the contract", async function () {
           const {controller} = await loadFixture(deployContract);
-
           expect(controller).to.not.empty;
       });
     });
+
+    describe("Setings", function () {
+        it("Should set smarts contracts used by the contract", async function () {
+            const {controller} = await loadFixture(deployContract);
+
+            await controller.setPriceConsumer(fake_smart_contract);
+            await controller.setAssetFactory(fake_smart_contract);
+            await controller.setLendingBorrowingFactory(fake_smart_contract);
+
+            expect(await controller.assetFactory()).to.equal(fake_smart_contract);
+            expect(await controller.lendingBorrowingFactory()).to.equal(fake_smart_contract);
+            expect(await controller.priceConsumer()).to.equal(fake_smart_contract);
+            
+        });
+      });
     
+
     describe("Create Asset and Protocol", function () {
         it("Should revert with Not enough Ether", async function () {
             const {controller} = await loadFixture(deployContract);
 
-            await expect(controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate)).to.be.revertedWith('Not enough Ether');
+            const options = {value: ethers.utils.parseEther("0.5")};
+
+            await expect(controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options)).to.be.revertedWith('Not enough Ether');
         });
 
         it("Should create asset and lending & borrowing protocol", async function () {
@@ -68,8 +82,26 @@ describe("LendingBorrowing", function () {
 			
             const options = {value: ethers.utils.parseEther("10.0")};
 
-            await expect(controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options)).to.emit(controller, "createAssetAndProtocolEvent");
+            await expect(controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options)).to.emit(controller, "AssetAndProtocolCreated");
         });
+        // 134487
+        // 1344870.00
+        // msg.value: 10000000000000000000
+        // (msg.value / 1e16): 1000
+        // value in usd: 13145.30
+        // price_ : 10000.00
+        // price_ / ETH_FACTOR: 100000
+
+        1314530
+        1314530
+
+        /* it("Should create asset and lending & borrowing protocol", async function () {
+            const {controller, owner} = await loadFixture(deployContract);
+			
+            const options = {value: ethers.utils.parseEther("10.0")};
+
+            await expect(controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options)).to.emit(controller, "createAssetAndProtocolEvent");
+        }); */
         
     });
 

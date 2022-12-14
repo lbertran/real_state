@@ -23,6 +23,15 @@ contract AssetFactory is AccessControl{
 
     mapping(address => Asset) public divisibleAssetsMap;
 
+    event DivisibleAssetCreated(
+        DivisibleAsset divisibleAsset
+    );
+
+    event AssetPriceUpdated(
+        address _address,
+        uint _price
+    );
+
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);   
     }
@@ -35,7 +44,7 @@ contract AssetFactory is AccessControl{
         
     ) 
         external
-        onlyRole(DEFAULT_ADMIN_ROLE)
+        //onlyRole(DEFAULT_ADMIN_ROLE)
         returns (address)
     {
         DivisibleAsset divisibleAsset = new DivisibleAsset(
@@ -55,6 +64,8 @@ contract AssetFactory is AccessControl{
         uint256 _key = divisibleAssets.length();
 
         divisibleAssets.set(_key, address(asset_.token));
+
+        emit DivisibleAssetCreated(divisibleAsset);
 
         return address(asset_.token);
 
@@ -88,5 +99,8 @@ contract AssetFactory is AccessControl{
     {
         require(_price>0,'Price cannot be zero.');
         divisibleAssetsMap[_address].price = _price;
+        divisibleAssetsMap[_address].lastUpdate = block.number;
+
+        emit AssetPriceUpdated(_address, _price);
     }
 }

@@ -41,18 +41,13 @@ describe("AssetFactory", function () {
             expect(tx_asset2).to.not.empty;
             expect(tx_asset3).to.not.empty;
 
-            const asset1_address = (await assetFactory._divisibleAssets(0)).token;
-            const asset2_address = (await assetFactory._divisibleAssets(1)).token;
-            const asset3_address = (await assetFactory._divisibleAssets(2)).token;
-            
-            /* console.log("A1 address at: ", asset1_address);
-            console.log("A2 address at: ", asset2_address);
-            console.log("A3 address at: ", asset3_address); */
+            const asset1_address = (await assetFactory.divisibleAssetAddress(0));
+            const asset2_address = (await assetFactory.divisibleAssetAddress(1));
+            const asset3_address = (await assetFactory.divisibleAssetAddress(2));
 
             const asset1 = await ethers.getContractAt("DivisibleAsset", (asset1_address));
             const asset2 = await ethers.getContractAt("DivisibleAsset", (asset2_address));
             const asset3 = await ethers.getContractAt("DivisibleAsset", (asset3_address));
-
 
             expect(await asset1.name()).to.equal('Asset1');
             expect(await asset1.symbol()).to.equal('A1');
@@ -64,25 +59,35 @@ describe("AssetFactory", function () {
             expect(await asset3.symbol()).to.equal('A3');
 
             // compara el arreglo y el map
-            const map1 = await assetFactory._divisibleAssetsMap(asset1_address);
-            const map2 = await assetFactory._divisibleAssetsMap(asset2_address);
-            const map3 = await assetFactory._divisibleAssetsMap(asset3_address);
+            const arrayLength = await assetFactory.divisibleAssetsLength();
+            expect(arrayLength).to.equal(3);
+
+            const map1 = await assetFactory.divisibleAssetsMap(asset1_address);
+            const map2 = await assetFactory.divisibleAssetsMap(asset2_address);
+            const map3 = await assetFactory.divisibleAssetsMap(asset3_address);
             
             expect(asset1_address).to.equal(map1.token);
             expect(asset2_address).to.equal(map2.token);
             expect(asset3_address).to.equal(map3.token);
         });
 
-        it("Should create multiple DivisibleAsset and return collection", async function () {
+        it("Should create DivisibleAsset and update price", async function () {
+            
             const {assetFactory, DivisibleAsset} = await loadFixture(deployContract);
 
             const tx_asset1 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset1', 'A1',1000);
-            const tx_asset2 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset2', 'A2',2000);
-            const tx_asset3 = await assetFactory.createDivisibleAsset(ERC20_INITIALSUPLY, 'Asset3', 'A3',3000);
 
+            const asset1_address = (await assetFactory.divisibleAssetAddress(0));
 
-            const assetsArray = await assetFactory.allAssets();
-            expect(assetsArray.length).to.equal(3);
+            await assetFactory.updateAssetPrice(asset1_address, 2000);
+
+            const price = (await assetFactory.divisibleAssetsMap(asset1_address)).price;
+
+            const lastUpdate = (await assetFactory.divisibleAssetsMap(asset1_address)).lastUpdate;
+
+            expect(price).to.equal(2000);
+
+            expect(lastUpdate).to.equal(await ethers.provider.getBlockNumber());
             
         });
       });

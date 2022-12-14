@@ -32,6 +32,9 @@ contract Controller is AccessControl {
         address indexed _priceConsumer
     );    
 
+    // test vars
+    uint256 public _var;
+
     constructor(address _assetFactory, address _lendingBorrowingFactory, address _priceConsumer) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); 
         assetFactory = AssetFactory(_assetFactory);
@@ -51,7 +54,7 @@ contract Controller is AccessControl {
         uint256 _borrowThreshold,
         uint256 _interestRate
         
-    ) external payable {
+    ) external payable  {
         // initialSupply es la cantidad de tokens en que se fraccionará el activo
 
         // se trabajará con valores en USD y 2 decimales 
@@ -59,18 +62,20 @@ contract Controller is AccessControl {
         // el valor de ETH en USD se obtiene con 8 decimales, los cuales se corrigen a 2
         uint256 ethValueInUSD = uint256(priceConsumer.getLatestPrice() / 1e6); 
 
-        // se corrije el msg.value a 2 decimales
-        uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD;
+         // se corrije el msg.value y el _price a 2 decimales
+        uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
 
-        // en esta cuenta
+        uint price_ = _price * 1e2;
+         // en esta cuenta
         //  _price = precio de la propiedad en USD
         //  msgValueInUSD = msg.value en USD
         // ETH_FACTOR = cantidad de eth inicial que debe depositarse para tokenizar
-
-        require(msgValueInUSD >= _price / ETH_FACTOR , 'Not enough Ether');
-
+        
+        require(msgValueInUSD >= price_ / ETH_FACTOR , 'Not enough Ether');
+        
         address _token = assetFactory.createDivisibleAsset(_initialSupply, name_, symbol_, _price);
 
+        
         address _protocol = lendingBorrowingFactory.createLendingBorrowing( 
             _token, 
             address(assetFactory), 
@@ -82,15 +87,13 @@ contract Controller is AccessControl {
             _borrowThreshold,
             _interestRate
         );
-
+        
         // enviar ETH al protocolo
         (bool sent, ) = _protocol.call{value: msg.value, gas: 20317}("");
 
         require(sent, "Failed to send Ether");
-
-        emit AssetAndProtocolCreated(_token, _protocol, msg.value);
         
-
+        emit AssetAndProtocolCreated(_token, _protocol, msg.value);
     }
 
 

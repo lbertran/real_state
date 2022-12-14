@@ -5,6 +5,7 @@ import "./AssetFactory.sol";
 import "./LendingBorrowingFactory.sol";
 import "./PriceConsumer.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "hardhat/console.sol";
 
 contract Controller is AccessControl {
 
@@ -54,7 +55,7 @@ contract Controller is AccessControl {
         uint256 _borrowThreshold,
         uint256 _interestRate
         
-    ) external payable  {
+    ) external payable returns( address ) {
         // initialSupply es la cantidad de tokens en que se fraccionará el activo
 
         // se trabajará con valores en USD y 2 decimales 
@@ -65,13 +66,12 @@ contract Controller is AccessControl {
          // se corrije el msg.value y el _price a 2 decimales
         uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
 
-        uint price_ = _price * 1e2;
          // en esta cuenta
         //  _price = precio de la propiedad en USD
         //  msgValueInUSD = msg.value en USD
         // ETH_FACTOR = cantidad de eth inicial que debe depositarse para tokenizar
         
-        require(msgValueInUSD >= price_ / ETH_FACTOR , 'Not enough Ether');
+        require(msgValueInUSD >= ( _price * 1e2) / ETH_FACTOR , 'Not enough Ether');
         
         address _token = assetFactory.createDivisibleAsset(_initialSupply, name_, symbol_, _price);
 
@@ -94,6 +94,8 @@ contract Controller is AccessControl {
         require(sent, "Failed to send Ether");
         
         emit AssetAndProtocolCreated(_token, _protocol, msg.value);
+
+        return _protocol;
     }
 
 

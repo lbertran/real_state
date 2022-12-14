@@ -80,9 +80,25 @@ describe("LendingBorrowing", function () {
         it("Should create asset and lending & borrowing protocol", async function () {
             const {controller, owner} = await loadFixture(deployContract);
 			
+            console.log(await ethers.provider.getBalance(owner.address));
+
             const options = {value: ethers.utils.parseEther("10.0")};
 
-            await expect(controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options)).to.emit(controller, "AssetAndProtocolCreated");
+            const tx = await controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options);
+
+            const result = await tx.wait();
+            const event = result.events?.filter((x) => {return x.event == "AssetAndProtocolCreated"});
+
+            if(event && event[0].args){
+                let protocol = event[0].args['protocol'];
+                console.log(await ethers.provider.getBalance(protocol));
+                expect((await ethers.provider.getBalance(protocol))).to.equal(ethers.utils.parseEther("10.0"));
+            } 
+
+            
+
+            
+            
         });
         // 134487
         // 1344870.00

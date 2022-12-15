@@ -6,9 +6,14 @@ import "./LendingBorrowingFactory.sol";
 import "./PriceConsumer.sol";
 import "./DivisibleAsset.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "hardhat/console.sol";
 
+
 contract Controller is AccessControl {
+
+    using SafeERC20 for DivisibleAsset;
 
     AssetFactory public assetFactory;
     LendingBorrowingFactory public lendingBorrowingFactory;
@@ -105,14 +110,21 @@ contract Controller is AccessControl {
         // se corrije el msg.value y el _price a 2 decimales
         uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
 
+        DivisibleAsset _divisibleAsset = DivisibleAsset(_token);
+
+        console.log('total supply (2 dec):', _divisibleAsset.totalSupply() / 1e16);
+
         // obtiene el valor de 1 unidad de token en USD
         uint256 _amount = assetFactory.getAmount(_token);
         
-        console.log(msgValueInUSD);
-        console.log(_quantity * _amount);
+        console.log('ms.value in USD: ', msgValueInUSD);
+        console.log('unit amount', _amount);
 
         require(msgValueInUSD >= (_quantity * _amount * 1e2), 'Not enough Ether');
+        
+        DivisibleAsset(_token).safeTransfer(msg.sender, _quantity);
 
+        
 
     }
 

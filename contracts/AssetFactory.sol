@@ -105,8 +105,7 @@ contract AssetFactory is AccessControl{
     }
 
     function getAmount(address _token) external view returns (uint256){
-        DivisibleAsset _divisibleAsset = DivisibleAsset(_token);
-        uint256 _totalSupply = _divisibleAsset.totalSupply();
-        return (divisibleAssetsMap[_token].price / _totalSupply);
+        uint256 _totalSupply = DivisibleAsset(_token).totalSupply();
+        return (divisibleAssetsMap[_token].price / _totalSupply / 1e16);
     }  
 }

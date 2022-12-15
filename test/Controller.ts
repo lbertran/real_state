@@ -2,14 +2,15 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { mine } from "@nomicfoundation/hardhat-network-helpers";
+import { BigNumber } from "ethers";
 
-describe("LendingBorrowing", function () {
+describe("Controller", function () {
     
     // create asset params
-    const initialSupply = 2000;
+    const initialSupply = BigNumber.from("2000000000000000000000"); // en tokens con 18 decimales
     const name = 'Propiedad 1';
     const symbol = 'PROP1';
-    const asset_price = 10000;
+    const asset_price = 10000; // USD enteros
     const maxLTV = 80;
     const liqThreshold = 75;
     const liqFeeProtocol = 5;
@@ -128,6 +129,33 @@ describe("LendingBorrowing", function () {
             const options2 = {value: ethers.utils.parseEther("1")};
             
             await expect(controller.sellTokens(token, 10000, options2)).to.be.revertedWith('Not enough Ether');
+        });
+
+        it("Should buy and get tokens", async function () {
+            const {controller, otherAccount} = await loadFixture(deployContract);
+
+            const options = {value: ethers.utils.parseEther("10.0")};
+
+            const tx = await controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options);
+            const result = await tx.wait();
+            const event = result.events?.filter((x) => {return x.event == "AssetAndProtocolCreated"});
+
+            let token;
+
+            if(event && event[0].args){
+                token = event[0].args['token'];
+            }
+
+            const options2 = {value: ethers.utils.parseEther("1")};
+
+            await controller.connect(otherAccount).sellTokens(token, 10, options2);
+
+            const divisibleAsset = await ethers.getContractAt("DivisibleAsset", (await token));
+
+            let balance = await divisibleAsset.balanceOf(otherAccount.address);
+
+            console.log(balance);
+
         });
     });
 

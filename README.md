@@ -10,9 +10,9 @@ Luego estos tokens podrán ser utilizados en un procolo de Lending & Borrowing.
 
 ### Tokenización
 
-- Se crea un ERC20 que representa al activo. 
+- Se crea un ERC20 que representa al activo. Todo el supply es propiedad del protocol en el Smart Contract "Controller".
 
-- Se debe especifica la cantidad a emitir y el precio de 1 token en el momento de la creación.
+- Se debe especificar el precio total del activo y cuantos tokens se emitirán.
 
 - El creador debe depositar el 10% del precio en ETH, que serán devueltos al venderse el 90% de la propiedad. Estos ETH formarán parte del vault del protocolo de lending & borrowing. El creador a su vez percibirá los intereses de hacer staking de esos ETH (en ETH).
 

@@ -6,7 +6,7 @@ import { mine } from "@nomicfoundation/hardhat-network-helpers";
 describe("LendingBorrowing", function () {
     
     // create asset params
-    const initialSupply = 10;
+    const initialSupply = 2000;
     const name = 'Propiedad 1';
     const symbol = 'PROP1';
     const asset_price = 10000;
@@ -79,90 +79,57 @@ describe("LendingBorrowing", function () {
 
         it("Should create asset and lending & borrowing protocol", async function () {
             const {controller, owner} = await loadFixture(deployContract);
-			
-            console.log(await ethers.provider.getBalance(owner.address));
 
             const options = {value: ethers.utils.parseEther("10.0")};
 
             const tx = await controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options);
-
             const result = await tx.wait();
             const event = result.events?.filter((x) => {return x.event == "AssetAndProtocolCreated"});
 
+            let token;
+            let protocol;
+
             if(event && event[0].args){
-                let protocol = event[0].args['protocol'];
-                console.log(await ethers.provider.getBalance(protocol));
-                expect((await ethers.provider.getBalance(protocol))).to.equal(ethers.utils.parseEther("10.0"));
+                token = event[0].args['token'];
+                protocol = event[0].args['protocol'];
             } 
 
-            
+            const divisibleAsset = await ethers.getContractAt("DivisibleAsset", (await token));
+            expect(await divisibleAsset.name()).to.equal('Propiedad 1');
+            expect(await divisibleAsset.balanceOf(controller.address)).to.equal(initialSupply);
 
-            
-            
+            expect((await ethers.provider.getBalance(protocol))).to.equal(ethers.utils.parseEther("10.0"));
+
+            const lendingBorrowing = await ethers.getContractAt("LendingBorrowing", (await protocol));
+            expect(await lendingBorrowing.maxLTV()).to.equal(80);
         });
-        // 134487
-        // 1344870.00
-        // msg.value: 10000000000000000000
-        // (msg.value / 1e16): 1000
-        // value in usd: 13145.30
-        // price_ : 10000.00
-        // price_ / ETH_FACTOR: 100000
 
-        1314530
-        1314530
+        
+        
+        
+    });
 
-        /* it("Should create asset and lending & borrowing protocol", async function () {
-            const {controller, owner} = await loadFixture(deployContract);
-			
+    describe("Create Asset and Protocol", function () {
+        it("Should revert with Not enough Ether", async function () {
+            const {controller} = await loadFixture(deployContract);
+
             const options = {value: ethers.utils.parseEther("10.0")};
 
-            await expect(controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options)).to.emit(controller, "createAssetAndProtocolEvent");
-        }); */
-        
-    });
+            const tx = await controller.createAssetAndProtocol(initialSupply, name, symbol, asset_price, maxLTV, liqThreshold, liqFeeProtocol, liqFeeSender, borrowThreshold, interestRate, options);
+            const result = await tx.wait();
+            const event = result.events?.filter((x) => {return x.event == "AssetAndProtocolCreated"});
 
-    /*describe("Withdraw", function () {
-        it("Should revert with Not enough collateral token in account", async function () {
-            const {lendingBorrowing, otherAccount} = await loadFixture(deployContract);
-            await expect(lendingBorrowing.connect(otherAccount).withdraw(10)).to.be.revertedWith('Not enough collateral token in account');
-        });
-        it("Should withdraw tokens yo account", async function () {
-            const {lendingBorrowing, divisibleAsset, otherAccount} = await loadFixture(deployContract);   
+            let token;
 
-            await divisibleAsset.transfer(otherAccount.address, transfer_to_otheraccount); 
-            await divisibleAsset.connect(otherAccount).approve(lendingBorrowing.address, transfer_to_otheraccount);            
-            await lendingBorrowing.connect(otherAccount).deposit(transfer_to_otheraccount);  
+            if(event && event[0].args){
+                token = event[0].args['token'];
+            }
 
-            await lendingBorrowing.connect(otherAccount).withdraw(withdraw_to_otheraccount);
-
-            expect(await divisibleAsset.balanceOf(otherAccount.address)).to.equal(withdraw_to_otheraccount);
-
-            expect(await divisibleAsset.balanceOf(lendingBorrowing.address)).to.equal(transfer_to_otheraccount-withdraw_to_otheraccount);
-
-            expect((await lendingBorrowing.positions(otherAccount.address)).collateral).to.equal(transfer_to_otheraccount-withdraw_to_otheraccount);
-
-            expect((await lendingBorrowing.positions(otherAccount.address)).lastInterest).to.equal((await ethers.provider.getBlock("latest")).timestamp);
-        });
-        
-        
-    });
-
-    describe("Borrow", function () {
-        it("Should revert with Amount must be > 0", async function () {
-            const {lendingBorrowing, otherAccount} = await loadFixture(deployContract);
-            await expect(lendingBorrowing.connect(otherAccount).borrow(0)).to.be.revertedWith('Amount must be > 0');
-        });
-        it("Should revert with Not enough collateral to borrow that much", async function () {
-            const {lendingBorrowing, otherAccount} = await loadFixture(deployContract);
-            await expect(lendingBorrowing.connect(otherAccount).borrow(transfer_to_otheraccount)).to.be.revertedWith('Not enough collateral to borrow that much');
+            const options2 = {value: ethers.utils.parseEther("1")};
+            
+            await expect(controller.sellTokens(token, 10000, options2)).to.be.revertedWith('Not enough Ether');
         });
     });
 
-    describe("Repay", function () {
-        it("Should revert with Can't repay 0", async function () {
-            const {lendingBorrowing, otherAccount} = await loadFixture(deployContract);
-            await expect(lendingBorrowing.connect(otherAccount).repay(0)).to.be.revertedWith("Can't repay 0");
-        });
-        
-    }); */
+    
 });

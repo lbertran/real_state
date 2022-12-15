@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "./AssetFactory.sol";
 import "./LendingBorrowingFactory.sol";
 import "./PriceConsumer.sol";
+import "./DivisibleAsset.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "hardhat/console.sol";
 
@@ -63,7 +64,7 @@ contract Controller is AccessControl {
         // el valor de ETH en USD se obtiene con 8 decimales, los cuales se corrigen a 2
         uint256 ethValueInUSD = uint256(priceConsumer.getLatestPrice() / 1e6); 
 
-         // se corrije el msg.value y el _price a 2 decimales
+        // se corrije el msg.value y el _price a 2 decimales
         uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
 
          // en esta cuenta
@@ -98,6 +99,22 @@ contract Controller is AccessControl {
         return _protocol;
     }
 
+    function sellTokens(address _token, uint256 _quantity) external payable {
+        // el valor de ETH en USD se obtiene con 8 decimales, los cuales se corrigen a 2
+        uint256 ethValueInUSD = uint256(priceConsumer.getLatestPrice() / 1e6); 
+        // se corrije el msg.value y el _price a 2 decimales
+        uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
+
+        // obtiene el valor de 1 unidad de token en USD
+        uint256 _amount = assetFactory.getAmount(_token);
+        
+        console.log(msgValueInUSD);
+        console.log(_quantity * _amount);
+
+        require(msgValueInUSD >= (_quantity * _amount * 1e2), 'Not enough Ether');
+
+
+    }
 
     function setAssetFactory(address _assetFactory)
         external

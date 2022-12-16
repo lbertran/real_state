@@ -48,14 +48,14 @@ contract AssetFactory is AccessControl{
         returns (address)
     {
         DivisibleAsset divisibleAsset = new DivisibleAsset(
-            _initialSupply,
+            _initialSupply * 1e18,
             name_,
             symbol_
         );
 
         //require(DivisibleAsset(divisibleAsset).transfer(msg.sender, _initialSupply),'Transfer to creator failed');
         
-        DivisibleAsset(divisibleAsset).safeTransfer(msg.sender, _initialSupply);
+        DivisibleAsset(divisibleAsset).safeTransfer(msg.sender, _initialSupply * 1e18);
 
         Asset memory asset_ = Asset(divisibleAsset, _price, block.timestamp);
         
@@ -104,8 +104,7 @@ contract AssetFactory is AccessControl{
         emit AssetPriceUpdated(_address, _price);
     }
 
-    function getAmount(address _token) external view returns (uint256){
-        uint256 _totalSupply = DivisibleAsset(_token).totalSupply();
-        return (divisibleAssetsMap[_token].price / _totalSupply / 1e16);
+    function getPrice(address _token) external view returns (uint256){
+        return divisibleAssetsMap[_token].price;
     }  
 }

@@ -104,25 +104,32 @@ contract Controller is AccessControl {
         return _protocol;
     }
 
+    // donde _quantity esta en numeros con 2 decimales 
     function sellTokens(address _token, uint256 _quantity) external payable {
         // el valor de ETH en USD se obtiene con 8 decimales, los cuales se corrigen a 2
         uint256 ethValueInUSD = uint256(priceConsumer.getLatestPrice() / 1e6); 
         // se corrije el msg.value y el _price a 2 decimales
         uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
 
+        
+        // obtiene el precio del activo en USD
+        uint256 _price = assetFactory.getPrice(_token);
+        // obtiene el totalSupply del token
         DivisibleAsset _divisibleAsset = DivisibleAsset(_token);
+        uint256 _totalSupply = _divisibleAsset.totalSupply() / 1e18;
+        // calcula el monto unitario en USD por token  
+        uint256 _amount = _price / _totalSupply;
 
-        console.log('total supply (2 dec):', _divisibleAsset.totalSupply() / 1e16);
+        /* console.log('msg.value in USD: ', msgValueInUSD);
+        console.log('_price: ', _price);
+        console.log('_totalSupply', _totalSupply);
+        console.log('_amount', _amount);
+        console.log('_quantity', _quantity);
+        console.log('monto a cubrir. (Cantidad x monto unitario)', _quantity * _amount); */
 
-        // obtiene el valor de 1 unidad de token en USD
-        uint256 _amount = assetFactory.getAmount(_token);
+        require(msgValueInUSD >= (_quantity * _amount), 'Not enough Ether');
         
-        console.log('ms.value in USD: ', msgValueInUSD);
-        console.log('unit amount', _amount);
-
-        require(msgValueInUSD >= (_quantity * _amount * 1e2), 'Not enough Ether');
-        
-        DivisibleAsset(_token).safeTransfer(msg.sender, _quantity);
+        DivisibleAsset(_token).safeTransfer(msg.sender, _quantity * 1e16); 
 
         
 

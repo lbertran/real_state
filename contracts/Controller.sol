@@ -67,19 +67,19 @@ contract Controller is AccessControl {
         // se trabajará con valores en USD y 2 decimales 
 
         // el valor de ETH en USD se obtiene con 8 decimales, los cuales se corrigen a 2
-        uint256 ethValueInUSD = uint256(priceConsumer.getLatestPrice() / 1e6); 
+        //uint256 ethValueInUSD = uint256(priceConsumer.getLatestPrice() / 1e6); 
 
         // se corrije el msg.value y el _price a 2 decimales
-        uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
+        //uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
 
          // en esta cuenta
         //  _price = precio de la propiedad en USD
         //  msgValueInUSD = msg.value en USD
         // ETH_FACTOR = cantidad de eth inicial que debe depositarse para tokenizar
         
-        require(msgValueInUSD >= ( _price * 1e2) / ETH_FACTOR , 'Not enough Ether');
+        require( (msg.value / 1e16) * uint256(priceConsumer.getLatestPrice() / 1e6) / 1e2 >= ( _price * 1e2) / ETH_FACTOR , 'Not enough Ether');
         
-        address _token = assetFactory.createDivisibleAsset(_initialSupply, name_, symbol_, _price);
+        address _token = assetFactory.createDivisibleAsset(_initialSupply, name_, symbol_, msg.value, _price);
 
         
         address _protocol = lendingBorrowingFactory.createLendingBorrowing( 
@@ -105,7 +105,7 @@ contract Controller is AccessControl {
     }
 
     // donde _quantity esta en numeros con 2 decimales 
-    function sellTokens(address _token, uint256 _quantity) external payable {
+    function buyTokens(address _token, uint256 _quantity) external payable {
         // el valor de ETH en USD se obtiene con 8 decimales, los cuales se corrigen a 2
         uint256 ethValueInUSD = uint256(priceConsumer.getLatestPrice() / 1e6); 
         // se corrije el msg.value y el _price a 2 decimales
@@ -129,10 +129,26 @@ contract Controller is AccessControl {
 
         require(msgValueInUSD >= (_quantity * _amount), 'Not enough Ether');
         
-        DivisibleAsset(_token).safeTransfer(msg.sender, _quantity * 1e16); 
+        DivisibleAsset(_token).safeTransfer(msg.sender, _quantity * 1e16);         
 
+    }
+
+    function claimInitialValue(address _token) external payable {
+
+        uint256 _claimed = assetFactory.getClaimed(_token);
+        require(_claimed == 0, 'Value alredy claimed');
+        address _creator = assetFactory.getCreator(_token);
+        require(msg.sender == _creator, 'Caller is not the token creator');
+
+        DivisibleAsset _divisibleAsset = DivisibleAsset(_token);
+        uint256 _contractBalance = _divisibleAsset.balanceOf(address(this));
+        uint256 _totalSupply = _divisibleAsset.totalSupply();
+
+        require(_contractBalance / _totalSupply * 10 >= 9, 'Value is not claimable' );
+
+        (bool sent, ) = msg.sender.call{value: msg.value, gas: 20317}("");
         
-
+        require(sent, "Failed to send Ether");
     }
 
     function setAssetFactory(address _assetFactory)

@@ -17,6 +17,9 @@ contract AssetFactory is AccessControl{
     
     struct Asset {
         DivisibleAsset token;
+        address creator;
+        uint256 claimed;
+        uint256 initialValue; // in ETH
         uint256 price;
         uint256 lastUpdate;
     }
@@ -40,6 +43,7 @@ contract AssetFactory is AccessControl{
         uint256 _initialSupply,
         string memory name_,
         string memory symbol_,
+        uint256 _initialValue,
         uint256 _price
         
     ) 
@@ -52,12 +56,10 @@ contract AssetFactory is AccessControl{
             name_,
             symbol_
         );
-
-        //require(DivisibleAsset(divisibleAsset).transfer(msg.sender, _initialSupply),'Transfer to creator failed');
         
         DivisibleAsset(divisibleAsset).safeTransfer(msg.sender, _initialSupply * 1e18);
 
-        Asset memory asset_ = Asset(divisibleAsset, _price, block.timestamp);
+        Asset memory asset_ = Asset(divisibleAsset,  tx.origin , 0, _initialValue, _price, block.timestamp);
         
         divisibleAssetsMap[address(asset_.token)] = asset_;
 
@@ -107,4 +109,12 @@ contract AssetFactory is AccessControl{
     function getPrice(address _token) external view returns (uint256){
         return divisibleAssetsMap[_token].price;
     }  
+
+    function getCreator(address _token) external view returns (address){
+        return divisibleAssetsMap[_token].creator;
+    } 
+
+    function getClaimed(address _token) external view returns (uint256){
+        return divisibleAssetsMap[_token].claimed;
+    } 
 }

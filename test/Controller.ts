@@ -124,7 +124,7 @@ describe("Controller", function () {
 
             const options2 = {value: ethers.utils.parseEther("1")};
             
-            await expect(controller.sellTokens(token, 1000000, options2)).to.be.revertedWith('Not enough Ether');
+            await expect(controller.buyTokens(token, 1000000, options2)).to.be.revertedWith('Not enough Ether');
         });
 
         it("Should buy and get tokens", async function () {
@@ -144,7 +144,7 @@ describe("Controller", function () {
 
             const options2 = {value: ethers.utils.parseEther("1")};
 
-            await controller.connect(otherAccount).sellTokens(token, 1000, options2);
+            await controller.connect(otherAccount).buyTokens(token, 1000, options2);
 
             const divisibleAsset = await ethers.getContractAt("DivisibleAsset", (await token));
 

@@ -373,7 +373,7 @@ contract LendingBorrowing is Ownable {
         
         // valor del colateral en USD
 
-        (,uint price,) = assetFactory.divisibleAssetsMap(token);
+        (,,,,uint price,) = assetFactory.divisibleAssetsMap(token);
 
         uint256 collateralValue_ = collateral_ * price;
 

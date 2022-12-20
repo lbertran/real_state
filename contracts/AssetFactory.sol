@@ -22,6 +22,7 @@ contract AssetFactory is AccessControl{
         uint256 initialValue; // in ETH
         uint256 price;
         uint256 lastUpdate;
+        uint256 salesTotal;
     }
 
     mapping(address => Asset) public divisibleAssetsMap;
@@ -59,7 +60,7 @@ contract AssetFactory is AccessControl{
         
         DivisibleAsset(divisibleAsset).safeTransfer(msg.sender, _initialSupply * 1e18);
 
-        Asset memory asset_ = Asset(divisibleAsset,  tx.origin , 0, _initialValue, _price, block.timestamp);
+        Asset memory asset_ = Asset(divisibleAsset,  tx.origin , 0, _initialValue, _price, block.timestamp, 0);
         
         divisibleAssetsMap[address(asset_.token)] = asset_;
 
@@ -117,4 +118,16 @@ contract AssetFactory is AccessControl{
     function getClaimed(address _token) external view returns (uint256){
         return divisibleAssetsMap[_token].claimed;
     } 
+
+    function getSalesTotal(address _token) external view returns (uint256){
+        return divisibleAssetsMap[_token].salesTotal;
+    } 
+
+    function addSale(address _token, uint256 _sale) external {
+        divisibleAssetsMap[_token].salesTotal += _sale;
+    }
+
+    function emptySales(address _token) external {
+        divisibleAssetsMap[_token].salesTotal = 0;
+    }
 }

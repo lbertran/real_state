@@ -62,9 +62,6 @@ contract Controller is AccessControl {
         uint256 _interestRate
         
     ) external payable returns( address ) {
-        // initialSupply es la cantidad de tokens en que se fraccionará el activo
-
-        // se trabajará con valores en USD y 2 decimales 
 
         // el valor de ETH en USD se obtiene con 8 decimales, los cuales se corrigen a 2
         //uint256 ethValueInUSD = uint256(priceConsumer.getLatestPrice() / 1e6); 
@@ -72,9 +69,6 @@ contract Controller is AccessControl {
         // se corrije el msg.value y el _price a 2 decimales
         //uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
 
-         // en esta cuenta
-        //  _price = precio de la propiedad en USD
-        //  msgValueInUSD = msg.value en USD
         // ETH_FACTOR = cantidad de eth inicial que debe depositarse para tokenizar
         
         require( (msg.value / 1e16) * uint256(priceConsumer.getLatestPrice() / 1e6) / 1e2 >= ( _price * 1e2) / ETH_FACTOR , 'Not enough Ether');
@@ -111,7 +105,6 @@ contract Controller is AccessControl {
         // se corrije el msg.value y el _price a 2 decimales
         uint256 msgValueInUSD = (msg.value / 1e16) * ethValueInUSD / 1e2;
 
-        
         // obtiene el precio del activo en USD
         uint256 _price = assetFactory.getPrice(_token);
         // obtiene el totalSupply del token
@@ -128,6 +121,8 @@ contract Controller is AccessControl {
         console.log('monto a cubrir. (Cantidad x monto unitario)', _quantity * _amount); */
 
         require(msgValueInUSD >= (_quantity * _amount), 'Not enough Ether');
+ 
+        assetFactory.addSale(_token, msg.value);
         
         DivisibleAsset(_token).safeTransfer(msg.sender, _quantity * 1e16);         
 
@@ -146,7 +141,19 @@ contract Controller is AccessControl {
 
         require(_contractBalance / _totalSupply * 10 >= 9, 'Value is not claimable' );
 
-        (bool sent, ) = msg.sender.call{value: msg.value, gas: 20317}("");
+        // #TODO: enviar el ETH desde el protocolo de L&B
+    }
+
+    function claimTokensSales(address _token) external payable {
+
+        address _creator = assetFactory.getCreator(_token);
+        require(msg.sender == _creator, 'Caller is not the token creator');
+
+        uint256 _salesTotal = assetFactory.getSalesTotal(_token);    
+
+        assetFactory.emptySales(_token);
+
+        (bool sent, ) = msg.sender.call{value: _salesTotal, gas: 20317}("");
         
         require(sent, "Failed to send Ether");
     }

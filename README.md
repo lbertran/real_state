@@ -2,7 +2,7 @@
 
 ## Introducción
 
-El proyecto consiste en una plataforma mediante la cual se podrán tokenizar activos mediante un token ERC20.
+El proyecto consiste en una plataforma en la que se podrán tokenizar activos mediante un token ERC20.
 
 Luego estos tokens podrán ser utilizados en un procolo de Lending & Borrowing.
 
@@ -72,6 +72,33 @@ npm run start
 
 ## Controller
 Controla toda la operación, envía peticiones a AssetFactory y LendingBorrowingFactory
+
+### constructor
+Se configuran los contratos necesarios para el funcionamiento de la plataforma:
+- AssetFactory
+- LendingBorrowingFactory
+- PriceConsumer
+
+Además se setea al compilador del contrato como Admin.
+
+### createAssetAndProtocol
+Se lleva a cabo la tokenización. Recibe los siguientes parametros:
+- _initialSupply:  del erc20. En números enteros. Luego se asignan 18 decimales. Por ejemplo si se desean 100 tokens iniciales, se debe pasar el número 100 y luego en el AssetFactory se agregan 18 decimales, quedando 100000000000000000000.
+- name_: del erc20.
+- symbol_: del erc20.
+- _price: en USD, número entero. No se admiten decimales.
+- otros parametros financieros. Se explican en dettalle en el contrato LendingBorrowing.
+
+### buyTokens
+Para que un usuario pueda comprar tokens pagando con ETH. Recibe los siguientes parámetros:
+- _token: address del contrato erc20 que quiere comprar.
+-  _qunantuty: en números con 2 decimales. Es la cantidada de tokens que desea adquirir.
+
+### claimInitialValue
+Es la función que deevuelve el staking de ETH inicial al usuario tokenizaador. Recibe como parámetro el address del erc20.
+
+### claimTokensSales
+Función que trasnfiere el monto de las ventas al tokenizador (dueño del activo real).
 
 ## PriceConsumer
 Es el contrato que obtiene el precio en USD de ETH a través de un oráculo de ChainLink

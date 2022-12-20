@@ -20,7 +20,7 @@ contract LendingBorrowing is Ownable {
     // ---------------------------------------------------------------------
     // VARIABLES
     // ---------------------------------------------------------------------
-    address public token;
+   
     AssetFactory public assetFactory;
     PriceConsumer public priceConsumer;
 
@@ -30,110 +30,129 @@ contract LendingBorrowing is Ownable {
         uint256 lastInterest;
     }
 
-    mapping(address => Position) public positions;
-    
-    uint256 public procotolTotalCollateral;
-    uint256 public procotolTotalBorrowed; 
-    uint256 public maxLTV; 
-    
-    // umbral de liquidación, y fee para el protocolo y para el liquidador
-    uint256 public liqThreshold;
-    uint256 public liqFeeProtocol;
-    uint256 public liqFeeSender;
-    uint256 public protocolDebt;
+    struct Protocol {
+        mapping(address => Position) positions;
+        address token;
+        uint256 procotolTotalCollateral;
+        uint256 procotolTotalBorrowed; 
+        uint256 maxLTV; 
+        uint256 liqThreshold;
+        uint256 liqFeeProtocol;
+        uint256 liqFeeSender;
+        uint256 protocolDebt;
+        uint256 borrowThreshold;
+        uint256 interestRate;
+    }
 
-    uint256 public borrowThreshold;
-    uint256 public interestRate;
+    mapping(address => Protocol) protocols;
+
     uint256 public constant SCALING_FACTOR = 10000;
-    int128 public SECONDS_IN_YEAR; // int128 for compound interest math
+    int128 public SECONDS_IN_YEAR; // int128 for compound interest math    
 
     // ---------------------------------------------------------------------
     // EVENTS
     // ---------------------------------------------------------------------
 
-    event Deposit(address indexed account, uint256 amount);
+    event ProtocolCreated(address indexed account, uint256 amount, address token);
 
-    event Withdraw(address indexed account, uint256 amount);
+    event Deposit(address indexed account, uint256 amount, address token);
+
+    event Withdraw(address indexed account, uint256 amount, address token);
     
     event Borrow(
         address indexed account,
         uint256 amountBorrowed,
         uint256 totalDebt,
-        uint256 collateralAmount
+        uint256 collateralAmount,
+        address token
     );
 
     event Repay(
         address indexed account,
         uint256 debtRepaid,
         uint256 debtRemaining,
-        uint256 collateralAmount
+        uint256 collateralAmount,
+        address token
     );
-
+    // if liquidating at < 100% col rat -> protocol takes on debt
     event Liquidation(
         address indexed account,
         address indexed liquidator,
         uint256 collateralLiquidated,
         uint256 lastCollateralRatio,
         uint256 lastDebtOutstanding,
-        uint256 protocolDebtCreated // if liquidating at < 100% col rat -> protocol takes on debt
+        uint256 protocolDebtCreated,
+        address token
     );
 
     // ---------------------------------------------------------------------
     // CONSTRUCTOR
     // ---------------------------------------------------------------------
     constructor(
-        address _token,
         address _assetFactory,
-        address _priceConsumer,
+        address _priceConsumer
+    ) payable {
+        assetFactory = AssetFactory(_assetFactory);
+        priceConsumer = PriceConsumer(_priceConsumer);
+        // set SECONDS_IN_YEAR for interest calculations
+        SECONDS_IN_YEAR = ABDKMath64x64.fromUInt(31556952);        
+    }
+    
+    function createProtocol(
+        address _token,
         uint256 _maxLTV,
         uint256 _liqThreshold,
         uint256 _liqFeeProtocol,
         uint256 _liqFeeSender,
         uint256 _borrowThreshold,
-        uint256 _interestRate
-    ) payable {
-        token = _token;
-        assetFactory = AssetFactory(_assetFactory);
-        priceConsumer = PriceConsumer(_priceConsumer);
-        // fees and rates use SCALING_FACTOR 
-        maxLTV = _maxLTV;
-        liqThreshold = _liqThreshold;
-        liqFeeProtocol = _liqFeeProtocol;
-        liqFeeSender = _liqFeeSender;
-        borrowThreshold = _borrowThreshold;
-        interestRate = _interestRate;
-        // set SECONDS_IN_YEAR for interest calculations
-        SECONDS_IN_YEAR = ABDKMath64x64.fromUInt(31556952);
+        uint256 _interestRate    
+    ) external payable {
+        /* Protocol memory protocol_ = Protocol({
+            token: _token,
+            maxLTV: _maxLTV,
+            liqThreshold: _liqThreshold,
+            liqFeeProtocol: _liqFeeProtocol,
+            liqFeeSender: _liqFeeSender,
+            borrowThreshold: _borrowThreshold,
+            interestRate: _interestRate
+        }); */
+        Protocol storage protocol_ = protocols[_token];
+        protocols[_token].token = _token;
+        protocols[_token].maxLTV = _maxLTV;
+        protocols[_token].liqThreshold = _liqThreshold;
+        protocols[_token].liqFeeProtocol = _liqFeeProtocol;
+        protocols[_token].liqFeeSender = _liqFeeSender;
+        protocols[_token].borrowThreshold = _borrowThreshold;
+        protocols[_token].interestRate = _interestRate;
 
-        
+        emit ProtocolCreated(msg.sender, msg.value, _token);
+
     }
-    
-
     // ---------------------------------------------------------------------
     // PUBLIC STATE-MODIFYING FUNCTIONS
     // ---------------------------------------------------------------------
 
     // User deposits token as collateral
-    function deposit(uint256 _amount) public {
+    function deposit(uint256 _amount, address _token) public {
         require(_amount > 0, "Amount must be > 0");
         require(
-            IERC20(token).transferFrom(
+            IERC20(_token).transferFrom(
                 msg.sender,
                 address(this),
                 _amount
             ),
             "Token transfer failed"
         );
-        positions[msg.sender].collateral += _amount;
-        emit Deposit(msg.sender, _amount);
+        protocols[_token].positions[msg.sender].collateral += _amount;
+        emit Deposit(msg.sender, _amount, _token);
     }
 
     // User withdraws collateral if safety ratio stays > 200%
-    function withdraw(uint256 _amount) public {
-        Position storage pos = positions[msg.sender];
+    function withdraw(uint256 _amount, address _token) public {
+        Position storage pos = protocols[_token].positions[msg.sender];
         require(pos.collateral >= _amount, "Not enough collateral token in account");
 
-        uint256 interest_ = calcInterest(msg.sender);
+        uint256 interest_ = calcInterest(msg.sender, _token);
         pos.debt += interest_;
         pos.lastInterest = block.timestamp;
 
@@ -142,11 +161,11 @@ contract LendingBorrowing is Ownable {
         if (pos.debt == 0) {
             withdrawable_ = pos.collateral;
         } else {
-            uint256 colRatio = getCurrentCollateralRatio(msg.sender);
+            uint256 colRatio = getCurrentCollateralRatio(msg.sender, _token);
 
             withdrawable_ =
                 (pos.collateral / colRatio) *
-                (colRatio - borrowThreshold);
+                (colRatio - protocols[_token].borrowThreshold);
         }
         
         require(withdrawable_ >= _amount, "Not enough withdrawable amount in account");
@@ -154,27 +173,28 @@ contract LendingBorrowing is Ownable {
         pos.collateral -= _amount;
 
         require(
-            IERC20(token).transfer(msg.sender, _amount),
+            IERC20(_token).transfer(msg.sender, _amount),
             "Withdraw transfer failed"
         );
 
-        emit Withdraw(msg.sender, _amount);
+        emit Withdraw(msg.sender, _amount, _token);
     }
 
     // User mints and borrows against collateral
-    function borrow(uint256 _amount) public payable {
+    function borrow(uint256 _amount, address _token) public payable {
         require(_amount > 0, "Amount must be > 0");
 
-        Position storage pos = positions[msg.sender];
+        Position storage pos = protocols[_token].positions[msg.sender];
 
-        uint256 interest_ = calcInterest(msg.sender);
+        uint256 interest_ = calcInterest(msg.sender, _token);
 
         // Check forward col. ratio >= safe col. ratio limit
         require(
             getForwardCollateralRatio(
                 msg.sender,
-                pos.debt + interest_ + _amount
-            ) >= borrowThreshold,
+                pos.debt + interest_ + _amount,
+                _token
+            ) >= protocols[_token].borrowThreshold,
             "Not enough collateral to borrow that much"
         );
 
@@ -187,18 +207,18 @@ contract LendingBorrowing is Ownable {
         
         require(sent, "Failed to send Ether");
 
-        emit Borrow(msg.sender, _amount, pos.debt, pos.collateral);
+        emit Borrow(msg.sender, _amount, pos.debt, pos.collateral, _token);
     }
 
     // User repays any interest
-    function repay(uint256 _amount) public payable{
+    function repay(uint256 _amount, address _token) public payable{
         _amount = msg.value;
 
         require(_amount > 0, "Can't repay 0");
 
-        Position storage pos = positions[msg.sender];
+        Position storage pos = protocols[_token].positions[msg.sender];
 
-        uint256 interestDue = calcInterest(msg.sender);
+        uint256 interestDue = calcInterest(msg.sender, _token);
 
         // account for protocol interest revenue
         if (_amount >= interestDue + pos.debt) {
@@ -214,36 +234,37 @@ contract LendingBorrowing is Ownable {
         // restart interest compounding from here
         pos.lastInterest = block.timestamp;
 
-        emit Repay(msg.sender, _amount, pos.debt, pos.collateral);
+        emit Repay(msg.sender, _amount, pos.debt, pos.collateral, _token);
     }
 
     // Liquidates account if collateral ratio below safety threshold
     // Accounts for protocol shortfal as debt 
     // No protocol interest revenue taken on liquidations,
     // as a protocol liquidation fee is taken instead
-    function liquidate(address _account) public {
-        Position storage pos = positions[_account];
+    function liquidate(address _account, address _token) public {
+        Position storage pos = protocols[_token].positions[_account];
 
         require(pos.collateral > 0, "Account has no collateral");
         
-        uint256 interest_ = calcInterest(_account);
+        uint256 interest_ = calcInterest(_account, _token);
         uint256 totalCollateral = pos.collateral; //needed for reporting in event
         uint256 collateralRatio = getForwardCollateralRatio(
             _account,
-            pos.debt + interest_
+            pos.debt + interest_,
+            _token
         );
 
         // Check debt + interest puts account below liquidation col ratio
         // acá chequea si la pocisión es liquidable
         require(
-            collateralRatio < liqThreshold,
+            collateralRatio < protocols[_token].liqThreshold,
             "Account not below liquidation threshold"
         );
 
         // calc fees to protocol and liquidator
-        uint256 protocolShare = ((pos.collateral * liqFeeProtocol) /
+        uint256 protocolShare = ((pos.collateral * protocols[_token].liqFeeProtocol) /
             SCALING_FACTOR);
-        uint256 liquidatorShare = ((pos.collateral * liqFeeSender) /
+        uint256 liquidatorShare = ((pos.collateral * protocols[_token].liqFeeSender) /
             SCALING_FACTOR);
 
         require(
@@ -254,7 +275,7 @@ contract LendingBorrowing is Ownable {
         // taking protocol fees in token
         // el protocolo queda con sus tokens ya depositados. Solo se transfieren token al liquidador
         require(
-            IERC20(token).transferFrom(
+            IERC20(_token).transferFrom(
                 address(this),
                 msg.sender,
                 liquidatorShare
@@ -266,7 +287,8 @@ contract LendingBorrowing is Ownable {
         pos.collateral = totalCollateral - (protocolShare + liquidatorShare);
         uint256 colRatioAfterFees = getForwardCollateralRatio(
             _account,
-            pos.debt + interest_
+            pos.debt + interest_,
+            _token
         );
         uint256 protocolDebtCreated;
         if (colRatioAfterFees < SCALING_FACTOR) {
@@ -276,7 +298,7 @@ contract LendingBorrowing is Ownable {
                 pos.collateral;
         }
 
-        protocolDebt += protocolDebtCreated;
+        protocols[_token].protocolDebt += protocolDebtCreated;
 
         emit Liquidation(
             _account,
@@ -284,7 +306,8 @@ contract LendingBorrowing is Ownable {
             totalCollateral,
             collateralRatio,
             pos.debt,
-            protocolDebtCreated
+            protocolDebtCreated,
+            _token
         );
 
         pos.collateral = 0;
@@ -293,7 +316,7 @@ contract LendingBorrowing is Ownable {
 
     // Calculates interest on position of given address
     // WARNING: contains fancy math
-    function calcInterest(address _account)
+    function calcInterest(address _account, address _token)
         public
         view
         returns (uint256 interest)
@@ -301,25 +324,25 @@ contract LendingBorrowing is Ownable {
         // si la pocision esta en 0 ó el ultimo interes calculado es del bloque actual
         // retorna CERO
         if (
-            positions[_account].debt == 0 ||
-            positions[_account].lastInterest == 0 ||
-            interestRate == 0 ||
-            block.timestamp == positions[_account].lastInterest
+            protocols[_token].positions[_account].debt == 0 ||
+            protocols[_token].positions[_account].lastInterest == 0 ||
+            protocols[_token].interestRate == 0 ||
+            block.timestamp == protocols[_token].positions[_account].lastInterest
         ) {
             return 0;
         }
         // si el ultimo interes calculado no es del bloque actual
         uint256 secondsSinceLastInterest_ = block.timestamp -
-            positions[_account].lastInterest;
+            protocols[_token].positions[_account].lastInterest;
         int128 yearsBorrowed_ = ABDKMath64x64.div(
             ABDKMath64x64.fromUInt(secondsSinceLastInterest_),
             SECONDS_IN_YEAR
         );
         int128 interestRate_ = ABDKMath64x64.div(
-            ABDKMath64x64.fromUInt(interestRate),
+            ABDKMath64x64.fromUInt(protocols[_token].interestRate),
             ABDKMath64x64.fromUInt(SCALING_FACTOR)
         );
-        int128 debt_ = ABDKMath64x64.fromUInt(positions[_account].debt);
+        int128 debt_ = ABDKMath64x64.fromUInt(protocols[_token].positions[_account].debt);
 
         // continous compound interest = P*e^(i*t)
         // this figure includes principal + interest
@@ -333,35 +356,35 @@ contract LendingBorrowing is Ownable {
         );
 
         // returns only the interest, not the principal
-        return uint256(interest_) - positions[_account].debt;
+        return uint256(interest_) - protocols[_token].positions[_account].debt;
     }
 
     // Calculates forward collateral ratio of an account, using custom debt amount
-    function getForwardCollateralRatio(address _account, uint256 _totalDebt)
+    function getForwardCollateralRatio(address _account, uint256 _totalDebt, address _token)
         public
         view
         returns (uint256)
     {
-        return _getCollateralRatio(_account, _totalDebt);
+        return _getCollateralRatio(_account, _totalDebt, _token);
     }
 
     // Calculates current collateral ratio of an account.
     // NOTE: EXCLUDES INTEREST
-    function getCurrentCollateralRatio(address _account)
+    function getCurrentCollateralRatio(address _account, address _token)
         public
         view
         returns (uint256)
     {
-        return _getCollateralRatio(_account, positions[_account].debt);
+        return _getCollateralRatio(_account, protocols[_token].positions[_account].debt, _token);
     }
 
     // Internal getColRatio logic
-    function _getCollateralRatio(address _account, uint256 _totalDebt)
+    function _getCollateralRatio(address _account, uint256 _totalDebt, address _token)
         internal
         view
         returns (uint256)
     {
-        uint256 collateral_ = positions[_account].collateral;
+        uint256 collateral_ = protocols[_token].positions[_account].collateral;
 
         if (collateral_ == 0) {
             // if collateral is 0, col ratio is 0 and no borrowing possible
@@ -373,7 +396,7 @@ contract LendingBorrowing is Ownable {
         
         // valor del colateral en USD
 
-        (,,,,uint price,) = assetFactory.divisibleAssetsMap(token);
+        (,,,,,uint price,) = assetFactory.divisibleAssetsMap(_token);
 
         uint256 collateralValue_ = collateral_ * price;
 
@@ -397,22 +420,23 @@ contract LendingBorrowing is Ownable {
     function setFeesAndRates(
         uint256 _liqFeeProtocol,
         uint256 _liqFeeSender,
-        uint256 _interestRate
+        uint256 _interestRate,
+        address _token
     ) external onlyOwner {
         // Liquidation fees
         require(
             _liqFeeProtocol + _liqFeeSender <= SCALING_FACTOR,
             "Liquidation fees out of range"
         );
-        liqFeeProtocol = _liqFeeProtocol;
-        liqFeeSender = _liqFeeSender;
+        protocols[_token].liqFeeProtocol = _liqFeeProtocol;
+        protocols[_token].liqFeeSender = _liqFeeSender;
 
         // Interest rates - capped at 100% APR
         require(_interestRate <= SCALING_FACTOR, "InterestRate out of range");
-        interestRate = _interestRate;
+        protocols[_token].interestRate = _interestRate;
     }
 
-    function setThresholds(uint256 _borrowThreshold, uint256 _liqThreshold)
+    function setThresholds(uint256 _borrowThreshold, uint256 _liqThreshold, address _token)
         external
         onlyOwner
     {
@@ -426,13 +450,8 @@ contract LendingBorrowing is Ownable {
             _liqThreshold >= SCALING_FACTOR,
             "liq threshold must be > scaling factor"
         );
-        borrowThreshold = _borrowThreshold;
-        liqThreshold = _liqThreshold;
-    }
-
-    function setTokenAddress(address _token) external onlyOwner {
-        require(_token != address(0), "Zero address not allowed");
-        token = _token;
+        protocols[_token].borrowThreshold = _borrowThreshold;
+        protocols[_token].liqThreshold = _liqThreshold;
     }
 
     // ---------------------------------------------------------------------

@@ -2,7 +2,7 @@
 pragma solidity 0.8.7;
 
 import "./AssetFactory.sol";
-import "./LendingBorrowingFactory.sol";
+import "./LendingBorrowing.sol";
 import "./PriceConsumer.sol";
 import "./DivisibleAsset.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -16,14 +16,13 @@ contract Controller is AccessControl {
     using SafeERC20 for DivisibleAsset;
 
     AssetFactory public assetFactory;
-    LendingBorrowingFactory public lendingBorrowingFactory;
+    LendingBorrowing public lendingBorrowing;
     PriceConsumer public priceConsumer;
     
     uint256 public constant ETH_FACTOR = 10;
 
     event AssetAndProtocolCreated(
         address indexed token,
-        address indexed protocol,
         uint256 ethSupply
     );
 
@@ -31,8 +30,8 @@ contract Controller is AccessControl {
         address indexed _assetFactory
     );
 
-    event LendingBorrowingFactorySeted(
-        address indexed _lendingBorrowingFactory
+    event LendingBorrowingSeted(
+        address indexed _lendingBorrowing
     );
 
     event PriceConsumerSeted (
@@ -42,10 +41,10 @@ contract Controller is AccessControl {
     // test vars
     uint256 public _var;
 
-    constructor(address _assetFactory, address _lendingBorrowingFactory, address _priceConsumer) {
+    constructor(address _assetFactory, address payable _lendingBorrowing, address _priceConsumer) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); 
         assetFactory = AssetFactory(_assetFactory);
-        lendingBorrowingFactory = LendingBorrowingFactory(_lendingBorrowingFactory);
+        lendingBorrowing = LendingBorrowing(_lendingBorrowing);
         priceConsumer = PriceConsumer(_priceConsumer);
     }
     
@@ -75,27 +74,25 @@ contract Controller is AccessControl {
         
         address _token = assetFactory.createDivisibleAsset(_initialSupply, name_, symbol_, msg.value, _price);
 
-        
-        address _protocol = lendingBorrowingFactory.createLendingBorrowing( 
-            _token, 
-            address(assetFactory), 
-            address(priceConsumer),
-            _maxLTV,
-            _liqThreshold,
-            _liqFeeProtocol,
-            _liqFeeSender,
-            _borrowThreshold,
-            _interestRate
-        );
-        
         // enviar ETH al protocolo
-        (bool sent, ) = _protocol.call{value: msg.value, gas: 20317}("");
+        (bool sent, ) = address(lendingBorrowing).call{value: msg.value, gas: 20317}("");
 
         require(sent, "Failed to send Ether");
         
-        emit AssetAndProtocolCreated(_token, _protocol, msg.value);
+        lendingBorrowing.createProtocol( 
+            _token, 
+            _maxLTV,
+            _liqThreshold,
+            _liqFeeProtocol,
+            _liqFeeSender, 
+            _borrowThreshold,
+            _interestRate,
+            msg.value
+        );
 
-        return _protocol;
+        emit AssetAndProtocolCreated(_token, msg.value);
+
+        return _token;
     }
 
     // donde _quantity esta en numeros con 2 decimales 
@@ -130,16 +127,22 @@ contract Controller is AccessControl {
 
     function claimInitialValue(address _token) external payable {
 
-        uint256 _claimed = assetFactory.getClaimed(_token);
-        require(_claimed == 0, 'Value alredy claimed');
+        
         address _creator = assetFactory.getCreator(_token);
         require(msg.sender == _creator, 'Caller is not the token creator');
+
+        uint256 _claimed = assetFactory.getClaimed(_token);
+        require(_claimed == 0, 'Value alredy claimed');
 
         DivisibleAsset _divisibleAsset = DivisibleAsset(_token);
         uint256 _contractBalance = _divisibleAsset.balanceOf(address(this));
         uint256 _totalSupply = _divisibleAsset.totalSupply();
 
-        require(_contractBalance / _totalSupply * 10 >= 9, 'Value is not claimable' );
+        console.log('_contractBalance', _contractBalance);
+        console.log('_totalSupply', _totalSupply);
+        console.log('_contractBalance / _totalSupply', _contractBalance / _totalSupply);
+
+        require(_contractBalance / _totalSupply * 10 <= 1, 'Value is not claimable' );
 
         // #TODO: enviar el ETH desde el protocolo de L&B
     }
@@ -166,12 +169,12 @@ contract Controller is AccessControl {
         emit AssetFactorySeted(_assetFactory);
     }
 
-    function setLendingBorrowingFactory(address _lendingBorrowingFactory)
+    function setLendingBorrowing(address payable _lendingBorrowing)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        lendingBorrowingFactory = LendingBorrowingFactory(_lendingBorrowingFactory);
-        emit LendingBorrowingFactorySeted(_lendingBorrowingFactory);
+        lendingBorrowing = LendingBorrowing(_lendingBorrowing);
+        emit LendingBorrowingSeted(_lendingBorrowing);
     }
 
     function setPriceConsumer(address _priceConsumer)

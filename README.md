@@ -76,7 +76,7 @@ Controla toda la operación, envía peticiones a AssetFactory y LendingBorrowing
 ### constructor
 Se configuran los contratos necesarios para el funcionamiento de la plataforma:
 - AssetFactory
-- LendingBorrowingFactory
+- LendingBorrowing
 - PriceConsumer
 
 Además se setea al compilador del contrato como Admin.
@@ -114,15 +114,19 @@ Es el contrato que genera un contrato ERC20 (DivisibleAsset) por cada activo tok
 Utiliza el Factory Pattern
 
 ## LendingBorrowing
-Es un contrato que gestiona lending & borrowings de cada token ERC20 generado. Cada inmueble tokenizado con ERC20 tendrá su propio contrato LendingBorrowing.
+Es un contrato que gestiona lending & borrowings de cada token ERC20 generado.
 
-VARIABLES
-- token: dirección del contrato ERC20
+### Protocol
+Es una estructura que se instanciará por cada token ERC20 creado. Se alojaran en el map "protocols".
+
+Sus atributos son:
 
 - Position: estructura para la pocisión de cada address. Estan contenidas en el array "positions". Compuesta por: 
     - collateral: cantidad de colateral del token ERC20 stakeado.
     - debt: deuda de la pocisión
     - lastInterest: última vez que se calculo el interés y se actualizó la deuda
+
+- token: dirección del contrato ERC20
 
 - procotolTotalCollateral y procotolTotalBorrowed: a fines informativos para visualizar en el frontend
 
@@ -138,11 +142,16 @@ VARIABLES
 
 - interestRate: tasa de interés.
 
-- scaling factor: El factor de escala es un multiplicador que afecta la tasa de interés de los préstamos
+- vault: cantidad de ETH en el protocolo, disponible para prestamos y retiros de creadores de tokens.
+
+### Variables 
+
+- SCALING_FACTOR: El factor de escala es un multiplicador que afecta la tasa de interés de los préstamos
 
 - SECONDS_IN_YEAR: for compound interest math
 
-INTERÉS
+### Interés
+
 Se utiliza interés compuesto continuo.
 
 Formula: P*e^(i*t)
@@ -152,7 +161,42 @@ donde:
 - i: tasa de interes sobre el scalling factor
 - t: tiempo en años
 
-## LendingBorrowingFactory
-Es el contrato que genera un contrato de Lendgin&Borrowing por cada activo tokenizado con un ERC20.
+### Métodos
 
+#### constructor
+Se configuran los contratos necesarios para el funcionamiento de la plataforma:
+- AssetFactory
+- PriceConsumer
 
+Además se definen la cantidad de segundos en un año.
+
+#### createProtocol
+Se crea una instancia de la estrctura Protocol. Se reciben los parametros:
+- _token,
+- _maxLTV,
+- _liqThreshold,
+- _liqFeeProtocol,
+- _liqFeeSender,
+- _borrowThreshold,
+- _interestRate,
+- _vault
+
+#### deposit
+Se realiza un deposito de colateral en la pocisión del usuario en el protocolo. Se reciben los paramtros:
+- _amount
+- _token
+
+#### withdraw
+Se realiza un retiro de colateral de la pocisión del usuario en el protocolo. Se reciben los paramtros:
+- _amount
+- _token
+
+El proceso consiste en:
+- Calcular el monto "retirable".
+- Actualizar la deuda (el interés) y registrar el bloque de esta actualizacion.
+- Si la deuda es igual a cero, el retirable es igual al monto pasado por parámetro.
+- Si la deuda es distinta a cero:
+- - Se calcula el ColateralRatio actual
+- - El retirable será: (colateral / ColateralRatio) * (ColateralRatio - borrowThreshold)
+- Si el retirable es menor o igual al monto pasado por parámetro se hace el retiro por el importe de esté ultimo.
+- Ese monto pasado por parámetro se descuenta del colateral

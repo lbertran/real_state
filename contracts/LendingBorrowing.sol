@@ -42,6 +42,7 @@ contract LendingBorrowing is Ownable {
         uint256 protocolDebt;
         uint256 borrowThreshold;
         uint256 interestRate;
+        uint256 vault;
     }
 
     mapping(address => Protocol) protocols;
@@ -53,7 +54,7 @@ contract LendingBorrowing is Ownable {
     // EVENTS
     // ---------------------------------------------------------------------
 
-    event ProtocolCreated(address indexed account, uint256 amount, address token);
+    event ProtocolCreated(address indexed account, uint256 amount, address token, uint256 vault);
 
     event Deposit(address indexed account, uint256 amount, address token);
 
@@ -105,7 +106,8 @@ contract LendingBorrowing is Ownable {
         uint256 _liqFeeProtocol,
         uint256 _liqFeeSender,
         uint256 _borrowThreshold,
-        uint256 _interestRate    
+        uint256 _interestRate,
+        uint256 _vault
     ) external payable {
         /* Protocol memory protocol_ = Protocol({
             token: _token,
@@ -124,8 +126,9 @@ contract LendingBorrowing is Ownable {
         protocols[_token].liqFeeSender = _liqFeeSender;
         protocols[_token].borrowThreshold = _borrowThreshold;
         protocols[_token].interestRate = _interestRate;
+        protocols[_token].vault = _vault;
 
-        emit ProtocolCreated(msg.sender, msg.value, _token);
+        emit ProtocolCreated(msg.sender, msg.value, _token, _vault);
 
     }
     // ---------------------------------------------------------------------

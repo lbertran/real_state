@@ -203,6 +203,18 @@ El proceso consiste en:
 - se transfiere el prestamo en ETH
 
 #### repay
+Pagos de prestamos al protocolo.
+- monto a pagar (por value de llamada a funcion payable)
+- token del protocolo
+
+El proceso consiste en:
+- obtener interes de la pocisión
+- si el monto a pagar es mayor o igual al interes + la deuda de la pocision, queda saldada la deuda
+- sino, si el monto es, al menos, mayor o igual a solo el interes, se descuenta a la deuda total, el monto a pagar menos el interes
+- sino, se suma a la deuda total, el interes menos el monto a pagar
+- finalmente, se atualiza la deuda
+
+#### liquidate
 
 
 ### Métodos financieros

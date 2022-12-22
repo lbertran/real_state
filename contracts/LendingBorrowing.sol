@@ -214,8 +214,8 @@ contract LendingBorrowing is Ownable {
     }
 
     // User repays any interest
-    function repay(uint256 _amount, address _token) public payable{
-        _amount = msg.value;
+    function repay(address _token) public payable{
+        uint256 _amount = msg.value;
 
         require(_amount > 0, "Can't repay 0");
 

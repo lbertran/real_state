@@ -20,8 +20,6 @@ Luego estos tokens podrán ser utilizados en un procolo de Lending & Borrowing.
 
 ### Lending & Borrowing
 
-- Existirá un SC de L&B por cada ERC20 creado en la tokenización.
-
 - Lending: se depositarán ERC20.
 
 - Borrowing: se prestarán ETH del protocolo.
@@ -191,6 +189,20 @@ El proceso consiste en:
 - - El retirable será: (colateral / ColateralRatio) * (ColateralRatio - borrowThreshold)
 - Si el retirable es menor o igual al monto pasado por parámetro se hace el retiro por el importe de esté ultimo.
 - Ese monto pasado por parámetro se descuenta del colateral.
+
+#### borrow 
+Se solicita un prestama de ETH al protocolo, considerando el colateral depositado previamente. Se reciben los parámetros:
+- monto solicitado
+- token del protocolo
+
+El proceso consiste en:
+- obtener interes de la pocisión
+- getForwardCollateralRatio donde la deuda sera el interes calculado en el punto anterior + la deuda de la pocisión + el monto solicitado
+- este ultimo debe ser mayor o igual al colateral
+- se actualiza la deuda de la pocisión
+- se transfiere el prestamo en ETH
+
+#### repay
 
 
 ### Métodos financieros

@@ -150,16 +150,7 @@ Sus atributos son:
 
 - SECONDS_IN_YEAR: for compound interest math
 
-### Interés
 
-Se utiliza interés compuesto continuo.
-
-Formula: P*e^(i*t)
-
-donde:
-- P: deuda
-- i: tasa de interes sobre el scalling factor
-- t: tiempo en años
 
 ### Métodos
 
@@ -199,4 +190,54 @@ El proceso consiste en:
 - - Se calcula el ColateralRatio actual
 - - El retirable será: (colateral / ColateralRatio) * (ColateralRatio - borrowThreshold)
 - Si el retirable es menor o igual al monto pasado por parámetro se hace el retiro por el importe de esté ultimo.
-- Ese monto pasado por parámetro se descuenta del colateral
+- Ese monto pasado por parámetro se descuenta del colateral.
+
+
+### Métodos financieros
+
+#### calcInterest
+Calcula el interés actual de una pocisión. Se utiliza interés compuesto continuo. Reciben como parámetros:
+- Cuenta
+- Token del protocolo
+
+- si la pocision esta en 0 ó el ultimo interes calculado es del bloque actual,el interes es 0.
+- si el ultimo interes calculado no es del bloque actual:
+- - calcula los segundos desde el ultimo calculo de interes
+- - calcula los años que representan los segundos del punto anterior
+- - Calcula la tasa de interes, tomando la tasa de interes del protocolo sobre el SCALING_FACTOR
+- - Calcula el interes compuesto como resultado de: 
+
+Formula: P*e^(i*t)
+
+donde:
+- P: deuda
+- i: tasa de interes sobre el scalling factor
+- t: tiempo en años
+
+- - Retorno el interes calculado en el punto anterior menos la deuda
+
+#### _getCollateralRatio
+Calcula el ratio de colateral. Recibe como parámetros:
+- una cuenta
+- deuda
+- token del protocolo
+
+- Si el colateral es igual a cero, el ratio es 0.
+- Sino, si la deuda es igual a cero, el ratio es infinito.
+- Si ni el colateral, ni la deuda son cero:
+- - Se obtiene el precio del token
+- - El valor del colateral es la cantidad de colateral por precio.
+- - Se obtiene el precio de ETH.
+- - El valor de la deuda es la cantidad de deuda por el precio de ETH sobre el SCALING_FACTOR.
+- - el ratio es igual al valor del colateral por el SCALING_FACTOR sobre el valor de la deuda.
+
+#### getCurrentCollateralRatio
+Obtiene el ratio de colateral actual. Recibe como parametros:
+- Cuenta
+- Token del protocolo
+
+#### getForwardCollateralRatio
+Obtiene el ratio de colateral con una deuda dada. Recibe como parametros:
+- Cuenta
+- Deuda
+- Token del protocolo

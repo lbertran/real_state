@@ -203,7 +203,7 @@ El proceso consiste en:
 - se transfiere el prestamo en ETH
 
 #### repay
-Pagos de prestamos al protocolo.
+Pagos de prestamos al protocolo. Se reciben los parámetros:
 - monto a pagar (por value de llamada a funcion payable)
 - token del protocolo
 
@@ -215,6 +215,20 @@ El proceso consiste en:
 - finalmente, se atualiza la deuda
 
 #### liquidate
+Se liquidación las pocisiones cuya colateral, ya no cubre el monto prestado en ETH. Se reciben los parámetros:
+- Cuenta
+- Token del protocolo
+
+Proceso:
+- Primero se chequea si la cuenta posee colateral
+- Luego se calculan: el interes y el colateral ratio, donde la deuda es la deuda de la pocisión + el interés.
+- Si el colateral ratio esta por debajo del _liqThreshold, no se puede liquidar
+- Luego se calculan los fees para el protocolo y para el liquidador, en base al colateral de la pocisión a liquidar y el SCALING_FACTOR
+- Se transfieren los fees al liquidador. El protocolo queda con los fees en su poder.
+- Se recalcula el colateral de la posición, retandole la sumas de los fees anteriores.
+- Se calcula la bad debt del protocolo en base al colateral ratio con el nuevo colateral, pasando como deuda la deuda de la pocisión + el interes
+- Si el nuevo colateral ratio es menor al SCALING_FACTOR se ha creado bad debt, que es igual a multiplicar el nuevo colateral por la diferencia entre el SCALING_FACTOR y el nuevo colateral ratio. Se actualiza la bad debt del protocolo.
+- Se actualizan el colateral y la deuda de la pocisión a 0.
 
 
 ### Métodos financieros
